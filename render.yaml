@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: finance-backend
+    runtime: python
+    buildCommand: "rm -rf venv .venv && python3 -m pip install --break-system-packages -r requirements.txt && mkdir -p .venv/bin && touch .venv/bin/activate"
+    startCommand: "PYTHONPATH=/opt/render/.local/lib/python3.11/site-packages python3 -m uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        sync: false # Значение подтянется из панели управления
