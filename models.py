@@ -1,7 +1,7 @@
 import enum
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Enum as SQLEnum
 from sqlalchemy.orm import relationship
-from database import Base  # Используем твою базу данных
+from database import Base
 
 # 1. Перечисления для типов и статусов
 class TransactionType(str, enum.Enum):
@@ -24,13 +24,14 @@ class Category(Base):
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, unique=True)
-    type = Column(SQLEnum(TransactionType), nullable=False) # income или expense
+    type = Column(SQLEnum(TransactionType), nullable=False)  # income или expense
 
 # 2. Модели таблиц базы данных
 class Person(Base):
     __tablename__ = "persons"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    
     # Связи
     debts = relationship("Debt", back_populates="person")
     transactions = relationship("Transaction", back_populates="person")
@@ -47,6 +48,13 @@ class Debt(Base):
     person = relationship("Person", back_populates="debts")
     transactions = relationship("Transaction", back_populates="debt")
 
+class Wallet(Base):
+    __tablename__ = "wallets"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    balance = Column(Float, default=0.0)
+    user_id = Column(Integer, nullable=False)
+
 class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True, index=True)
@@ -56,7 +64,7 @@ class Transaction(Base):
     
     # Внешние ключи
     wallet_id = Column(Integer, ForeignKey("wallets.id"), nullable=False)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)  # Добавили связь с категорией
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     person_id = Column(Integer, ForeignKey("persons.id"), nullable=True)
     debt_id = Column(Integer, ForeignKey("debts.id"), nullable=True)
     user_id = Column(Integer, nullable=False)
@@ -64,8 +72,6 @@ class Transaction(Base):
     # Связи (relationships)
     debt = relationship("Debt", back_populates="transactions")
     person = relationship("Person", back_populates="transactions")
-    
-
     wallet = relationship("Wallet") 
     category = relationship("Category")
 
@@ -75,4 +81,3 @@ class User(Base):
     username = Column(String, unique=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)  # Вход по email
     hashed_password = Column(String, nullable=False)
-    
