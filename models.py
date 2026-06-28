@@ -20,6 +20,12 @@ class DebtStatus(str, enum.Enum):
     active = "active"
     closed = "closed"
 
+class Category(Base):
+    __tablename__ = "categories"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True)
+    type = Column(SQLEnum(TransactionType), nullable=False) # income или expense
+
 # 2. Модели таблиц базы данных
 class Person(Base):
     __tablename__ = "persons"
@@ -47,13 +53,19 @@ class Transaction(Base):
     amount = Column(Float, nullable=False)
     type = Column(SQLEnum(TransactionType), nullable=False)
     description = Column(String, nullable=True)
+    
+    # Внешние ключи
     wallet_id = Column(Integer, ForeignKey("wallets.id"), nullable=False)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)  # Добавили связь с категорией
     person_id = Column(Integer, ForeignKey("persons.id"), nullable=True)
     debt_id = Column(Integer, ForeignKey("debts.id"), nullable=True)
     user_id = Column(Integer, nullable=False)
 
-    # Связи
+    # Связи (relationships)
     debt = relationship("Debt", back_populates="transactions")
     person = relationship("Person", back_populates="transactions")
-    # Если у тебя есть модель Wallet в проекте:
-    # wallet = relationship("Wallet")
+    
+
+    wallet = relationship("Wallet") 
+    category = relationship("Category")
+    
