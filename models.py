@@ -79,11 +79,7 @@ class Transaction(Base):
     
     # ВАЖНО: Связываем кошелек через back_populates
     wallet = relationship("Wallet", back_populates="transactions")
-    # Связи (relationships)
-    debt = relationship("Debt", back_populates="transactions")
-    person = relationship("Person", back_populates="transactions")
-    wallet = relationship("Wallet") 
-    category = relationship("Category")
+    
 
 class User(Base):
     __tablename__ = "users"
