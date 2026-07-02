@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException, Depends
-from sqlalchemy.orm import Session
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import FastAPI, HTTPException, Depends # type: ignore
+from sqlalchemy.orm import Session # type: ignore
+from fastapi.security import OAuth2PasswordRequestForm # type: ignore
 from database import Base, engine
 import models
 import schemas
@@ -20,7 +20,7 @@ from routers import debts
 from routers import persons
 from routers import categories
 from routers import reports
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware # type: ignore
 
 app = FastAPI()
 

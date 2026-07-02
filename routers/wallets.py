@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import models
-from database import SessionLocal, get_db  # <-- Импортируем get_db отсюда
+from database import SessionLocal, get_db  # <-- Используем ЕДИНСТВЕННЫЙ импорт отсюда
 from auth import get_current_user
 from pydantic import BaseModel
 
@@ -11,14 +11,7 @@ class WalletCreate(BaseModel):
     name: str
     currency: str
 
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# !!! ФУНКЦИЮ def get_db(): ОТСЮДА МЫ ПОЛНОСТЬЮ УБРАЛИ, ТАК КАК ОНА СТОИТ В ИМПОРТЕ !!!
 
 # =====================================================
 # CREATE WALLET
@@ -32,22 +25,22 @@ def create_wallet(
     db_wallet = models.Wallet(
         name=wallet.name,
         currency=wallet.currency,
-        balance=0.0,  # Задали float
+        balance=0.0,  
         user_id=current_user.id
     )
 
     db.add(db_wallet)
     db.commit()
     db.refresh(db_wallet)
-    return db_wallet  # Теперь функция возвращает созданный кошелек!
+    return db_wallet  
 
 # =====================================================
-# UPDATE WALLET (Шаг 3)
+# UPDATE WALLET 
 # =====================================================
 @router.put("/wallets/{wallet_id}")
 def update_wallet(
     wallet_id: int,
-    wallet_data: WalletCreate,  # Используем локальную схему WalletCreate вместо schemas.WalletCreate
+    wallet_data: WalletCreate,  
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
@@ -59,13 +52,12 @@ def update_wallet(
     if not db_wallet:
         raise HTTPException(status_code=404, detail="Wallet not found")
 
-    # Обновляем поля кошелька
     db_wallet.name = wallet_data.name
     db_wallet.currency = wallet_data.currency
 
     db.commit()
     db.refresh(db_wallet)
-    return db_wallet  # Убрали дублирующий return
+    return db_wallet  
 
 # =====================================================
 # GET WALLETS
