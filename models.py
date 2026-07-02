@@ -52,9 +52,9 @@ class Wallet(Base):
     __tablename__ = "wallets"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    currency = Column(String, default="TRY")  # <-- Убедись, что эта строка есть!
     balance = Column(Float, default=0.0)
     user_id = Column(Integer, nullable=False)
-
 
     transactions = relationship("Transaction", back_populates="wallet", cascade="all, delete-orphan")
 
