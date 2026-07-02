@@ -55,6 +55,9 @@ class Wallet(Base):
     balance = Column(Float, default=0.0)
     user_id = Column(Integer, nullable=False)
 
+
+    transactions = relationship("Transaction", back_populates="wallet", cascade="all, delete-orphan")
+
 class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True, index=True)
@@ -69,6 +72,13 @@ class Transaction(Base):
     debt_id = Column(Integer, ForeignKey("debts.id"), nullable=True)
     user_id = Column(Integer, nullable=False)
 
+    # Связи (relationships)
+    debt = relationship("Debt", back_populates="transactions")
+    person = relationship("Person", back_populates="transactions")
+    category = relationship("Category")
+    
+    # ВАЖНО: Связываем кошелек через back_populates
+    wallet = relationship("Wallet", back_populates="transactions")
     # Связи (relationships)
     debt = relationship("Debt", back_populates="transactions")
     person = relationship("Person", back_populates="transactions")
