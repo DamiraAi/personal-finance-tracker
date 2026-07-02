@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import models
-from database import SessionLocal, get_db  # <-- Используем ЕДИНСТВЕННЫЙ импорт отсюда
+from database import SessionLocal, get_db  
 from auth import get_current_user
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ class WalletCreate(BaseModel):
     name: str
     currency: str
 
-# !!! ФУНКЦИЮ def get_db(): ОТСЮДА МЫ ПОЛНОСТЬЮ УБРАЛИ, ТАК КАК ОНА СТОИТ В ИМПОРТЕ !!!
+
 
 # =====================================================
 # CREATE WALLET
@@ -22,6 +22,10 @@ def create_wallet(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
+    try:
+        user_id_val = current_user.id
+    except AttributeError:
+        user_id_val = current_user.get("id")
     db_wallet = models.Wallet(
         name=wallet.name,
         currency=wallet.currency,
