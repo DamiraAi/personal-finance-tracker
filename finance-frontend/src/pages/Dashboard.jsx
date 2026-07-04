@@ -26,20 +26,18 @@ function Dashboard() {
   const [report, setReport] = useState(null)
   const [categories, setCategories] = useState([])
 
-  // Стейты форм создания
+  // Стейты форм кошельков (теперь используются и для создания, и для редактирования)
   const [walletName, setWalletName] = useState("")
   const [walletCurrency, setWalletCurrency] = useState("")
+  const [editingWalletId, setEditingWalletId] = useState(null) // null = создание, id = редактирование
+
+  // Стейты форм создания транзакций
   const [amount, setAmount] = useState("")
   const [description, setDescription] = useState("")
   const [type, setType] = useState("income")
   const [walletId, setWalletId] = useState("")
   const [categoryId, setCategoryId] = useState("")
   const [newCategoryName, setNewCategoryName] = useState("")
-
-  // Стейты редактирования кошелька
-  const [editingWalletId, setEditingWalletId] = useState(null)
-  const [editName, setEditName] = useState("")
-  const [editCurrency, setEditCurrency] = useState("")
 
   // Стейты редактирования транзакции
   const [editingTxId, setEditingTxId] = useState(null)
@@ -165,32 +163,75 @@ function Dashboard() {
     }
   }
 
-  // Создание кошелька
-  const createWallet = async () => {
+  // Единая функция для обработки кнопки кошелька (Создание или Обновление)
+  const handleWalletSubmit = async () => {
     if (!walletName.trim() || !walletCurrency.trim()) {
       showNotification("Заполните все поля кошелька!", "error")
       return
     }
-    const token = localStorage.getItem("token")
-    const response = await fetch(`${BASE_URL}/wallets`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        name: walletName.trim(),
-        currency: walletCurrency.trim().toUpperCase()
-      })
-    })
 
-    if (response.ok) {
-      showNotification("Кошелек успешно создан")
-      setWalletName("")
-      setWalletCurrency("")
-      getWallets()
-      getReport()
+    const token = localStorage.getItem("token")
+    
+    if (editingWalletId) {
+      // --- РЕЖИМ РЕДАКТИРОВАНИЯ (PUT) ---
+      const response = await fetch(`${BASE_URL}/wallets/${editingWalletId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: walletName.trim(),
+          currency: walletCurrency.trim().toUpperCase()
+        })
+      })
+
+      if (response.ok) {
+        showNotification("Кошелек успешно обновлен")
+        cancelWalletEditing()
+        getWallets()
+        getReport()
+      } else {
+        showNotification("Ошибка при обновлении кошелька", "error")
+      }
+    } else {
+      // --- РЕЖИМ СОЗДАНИЯ (POST) ---
+      const response = await fetch(`${BASE_URL}/wallets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: walletName.trim(),
+          currency: walletCurrency.trim().toUpperCase()
+        })
+      })
+
+      if (response.ok) {
+        showNotification("Кошелек успешно создан")
+        setWalletName("")
+        setWalletCurrency("")
+        getWallets()
+        getReport()
+      } else {
+        showNotification("Ошибка при создании кошелька", "error")
+      }
     }
+  }
+
+  // Вход в режим редактирования кошелька (перенос данных в главную форму)
+  const startEditingWallet = (wallet) => {
+    setEditingWalletId(wallet.id)
+    setWalletName(wallet.name)
+    setWalletCurrency(wallet.currency)
+  }
+
+  // Выход из режима редактирования кошелька
+  const cancelWalletEditing = () => {
+    setEditingWalletId(null)
+    setWalletName("")
+    setWalletCurrency("")
   }
 
   // Создание категории
@@ -217,35 +258,6 @@ function Dashboard() {
       const errorData = await response.json()
       showNotification(errorData.detail || "Ошибка создания категории", "error")
     }
-  }
-
-  // Изменение кошелька
-  const updateWallet = async (id) => {
-    const token = localStorage.getItem("token")
-    const response = await fetch(`${BASE_URL}/wallets/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        name: editName,
-        currency: editCurrency
-      })
-    })
-
-    if (response.ok) {
-      showNotification("Кошелек обновлен")
-      setEditingWalletId(null)
-      getWallets()
-      getReport()
-    }
-  }
-
-  const startEditingWallet = (wallet) => {
-    setEditingWalletId(wallet.id)
-    setEditName(wallet.name)
-    setEditCurrency(wallet.currency)
   }
 
   const startEditingTransaction = (tx) => {
@@ -492,12 +504,24 @@ function Dashboard() {
       {/* FORMS */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "30px" }}>
         
-        {/* CREATE WALLET */}
-        <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px" }}>
-          <h2 style={{ fontSize: "1.2rem", marginBottom: "15px", borderBottom: "1px solid #334155", paddingBottom: "10px" }}>Create Wallet</h2>
+        {/* CREATE / UPDATE WALLET FORM */}
+        <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px", border: editingWalletId ? "2px solid #3b82f6" : "none" }}>
+          <h2 style={{ fontSize: "1.2rem", marginBottom: "15px", borderBottom: "1px solid #334155", paddingBottom: "10px", color: editingWalletId ? "#3b82f6" : "white" }}>
+            {editingWalletId ? "Update Wallet" : "Create Wallet"}
+          </h2>
           <input type="text" placeholder="Wallet name" value={walletName} onChange={(e) => setWalletName(e.target.value)} style={{ width: "90%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px" }} /><br />
           <input type="text" placeholder="Currency (USD, EUR, TRY)" value={walletCurrency} onChange={(e) => setWalletCurrency(e.target.value)} style={{ width: "90%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px" }} /><br />
-          <button onClick={createWallet} style={{ width: "100%", padding: "12px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>Create Wallet</button>
+          
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button onClick={handleWalletSubmit} style={{ flex: 1, padding: "12px", backgroundColor: editingWalletId ? "#22c55e" : "#3b82f6", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
+              {editingWalletId ? "Update Wallet" : "Create Wallet"}
+            </button>
+            {editingWalletId && (
+              <button onClick={cancelWalletEditing} style={{ padding: "12px", backgroundColor: "#64748b", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
 
         {/* CREATE CATEGORY */}
@@ -545,24 +569,29 @@ function Dashboard() {
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px" }}>
           <h2 style={{ fontSize: "1.3rem", marginBottom: "20px" }}>Wallets ({wallets.length})</h2>
           {wallets.map((wallet) => (
-            <div key={wallet.id} style={{ backgroundColor: "#334155", padding: "15px", borderRadius: "12px", marginBottom: "15px" }}>
-              {editingWalletId === wallet.id ? (
+            <div key={wallet.id} style={{ backgroundColor: "#334155", padding: "15px", borderRadius: "12px", marginBottom: "15px", border: editingWalletId === wallet.id ? "1px dashed #3b82f6" : "none" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} style={{ padding: "8px", borderRadius: "6px", backgroundColor: "#1e293b", color: "white", marginBottom: "10px", width: "90%" }} /><br />
-                  <input type="text" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)} style={{ padding: "8px", borderRadius: "6px", backgroundColor: "#1e293b", color: "white", marginBottom: "10px", width: "90%" }} /><br />
-                  <button onClick={() => updateWallet(wallet.id)} style={{ padding: "6px 12px", backgroundColor: "#22c55e", color: "white", border: "none", borderRadius: "6px", marginRight: "5px", fontWeight: "bold" }}>Save</button>
-                  <button onClick={() => setEditingWalletId(null)} style={{ padding: "6px 12px", backgroundColor: "#64748b", color: "white", border: "none", borderRadius: "6px" }}>Cancel</button>
+                  <h3 style={{ margin: "0 0 5px 0", color: "#f8fafc" }}>{wallet.name}</h3>
+                  <p style={{ margin: "5px 0", fontSize: "1.1rem" }}>Balance: <strong>{wallet.balance} {wallet.currency}</strong></p>
+                  <p style={{ margin: "5px 0", fontSize: "12px", color: "#94a3b8" }}>ID: {wallet.id}</p>
                 </div>
-              ) : (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <h3 style={{ margin: "0 0 5px 0", color: "#f8fafc" }}>{wallet.name}</h3>
-                    <p style={{ margin: "5px 0", fontSize: "1.1rem" }}>Balance: <strong>{wallet.balance} {wallet.currency}</strong></p>
-                    <p style={{ margin: "5px 0", fontSize: "12px", color: "#94a3b8" }}>ID: {wallet.id}</p>
-                  </div>
-                  <button onClick={() => startEditingWallet(wallet)} style={{ padding: "8px 14px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold" }}>Edit</button>
-                </div>
-              )}
+                <button 
+                  onClick={() => startEditingWallet(wallet)} 
+                  style={{ 
+                    padding: "8px 14px", 
+                    backgroundColor: editingWalletId === wallet.id ? "#64748b" : "#3b82f6", 
+                    color: "white", 
+                    border: "none", 
+                    borderRadius: "8px", 
+                    fontWeight: "bold",
+                    cursor: "pointer"
+                  }}
+                  disabled={editingWalletId === wallet.id}
+                >
+                  {editingWalletId === wallet.id ? "Editing..." : "Edit"}
+                </button>
+              </div>
             </div>
           ))}
         </div>
