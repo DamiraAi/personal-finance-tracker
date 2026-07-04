@@ -20,13 +20,27 @@ class DebtStatus(str, enum.Enum):
     active = "active"
     closed = "closed"
 
-class Category(Base):
-    __tablename__ = "categories"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False, unique=True)
-    type = Column(SQLEnum(TransactionType), nullable=False)  # income или expense
+# ТЕПЕРЬ СТРОГО: Категория может быть либо Income, либо Expense
+class CategoryType(str, enum.Enum):
+    income = "income"
+    expense = "expense"
+
 
 # 2. Модели таблиц базы данных
+
+class Category(Base):
+    __tablename__ = "categories"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)  # Убрали глобальный unique=True
+    type = Column(SQLEnum(CategoryType), nullable=False)  # Строго 'income' или 'expense'
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # <-- ТЕПЕРЬ ЕСТЬ СВЯЗЬ С ПОЛЬЗОВАТЕЛЕМ!
+
+    # Связи
+    user = relationship("User", back_populates="categories")
+    transactions = relationship("Transaction", back_populates="category")
+
+
 class Person(Base):
     __tablename__ = "persons"
     id = Column(Integer, primary_key=True, index=True)
@@ -35,6 +49,7 @@ class Person(Base):
     # Связи
     debts = relationship("Debt", back_populates="person")
     transactions = relationship("Transaction", back_populates="person")
+
 
 class Debt(Base):
     __tablename__ = "debts"
@@ -48,15 +63,19 @@ class Debt(Base):
     person = relationship("Person", back_populates="debts")
     transactions = relationship("Transaction", back_populates="debt")
 
+
 class Wallet(Base):
     __tablename__ = "wallets"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    currency = Column(String, default="TRY")  # <-- Убедись, что эта строка есть!
+    currency = Column(String, default="TRY")
     balance = Column(Float, default=0.0)
-    user_id = Column(Integer, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
+    # Связи
+    user = relationship("User", back_populates="wallets")
     transactions = relationship("Transaction", back_populates="wallet", cascade="all, delete-orphan")
+
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -66,24 +85,28 @@ class Transaction(Base):
     description = Column(String, nullable=True)
     
     # Внешние ключи
-    wallet_id = Column(Integer, ForeignKey("wallets.id"), nullable=False)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
+    wallet_id = Column(Integer, ForeignKey("wallets.id", ondelete="CASCADE"), nullable=False)
+    category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)  # Если удалить категорию, транзакции останутся
     person_id = Column(Integer, ForeignKey("persons.id"), nullable=True)
     debt_id = Column(Integer, ForeignKey("debts.id"), nullable=True)
-    user_id = Column(Integer, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     # Связи (relationships)
     debt = relationship("Debt", back_populates="transactions")
     person = relationship("Person", back_populates="transactions")
-    category = relationship("Category")
-    
-    # ВАЖНО: Связываем кошелек через back_populates
+    category = relationship("Category", back_populates="transactions")
     wallet = relationship("Wallet", back_populates="transactions")
+    user = relationship("User", back_populates="transactions")
     
 
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)  # Вход по email
+    email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+
+    # Двусторонние связи, чтобы легко выгружать всё для отчетов
+    wallets = relationship("Wallet", back_populates="user", cascade="all, delete-orphan")
+    categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")
+    transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
