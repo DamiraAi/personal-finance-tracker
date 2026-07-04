@@ -5,6 +5,8 @@ from database import Base, engine
 import models
 import schemas
 
+Base.metadata.create_all(bind=engine)
+
 from auth import (
     hash_password,
     verify_password,
