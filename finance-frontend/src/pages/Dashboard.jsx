@@ -37,7 +37,10 @@ function Dashboard() {
   const [type, setType] = useState("income")
   const [walletId, setWalletId] = useState("")
   const [categoryId, setCategoryId] = useState("")
+  
+  // Категории: имя и тип (расход/доход)
   const [newCategoryName, setNewCategoryName] = useState("")
+  const [newCategoryType, setNewCategoryType] = useState("expense") 
 
   // Стейты редактирования транзакции
   const [editingTxId, setEditingTxId] = useState(null)
@@ -68,6 +71,8 @@ function Dashboard() {
     setToast({ show: true, message, type })
     setTimeout(() => setToast({ show: false, message: "", type: "success" }), 4000)
   }
+
+  
 
   const logout = () => {
     localStorage.removeItem("token")
@@ -342,15 +347,52 @@ function Dashboard() {
   }
 
   const getCategories = async () => {
-    const token = localStorage.getItem("token")
-    const response = await fetch(`${BASE_URL}/categories`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    if (response.ok) {
-      const data = await response.json()
-      setCategories(data)
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${BASE_URL}/categories`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error("Ошибка при получении категорий:", error);
     }
-  }
+  };
+
+  // 2. Создание категории
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${BASE_URL}/categories`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          name: newCategoryName,
+          type: newCategoryType
+        })
+      });
+
+      if (response.ok) {
+        setNewCategoryName("");
+        showNotification("Категория успешно создана!", "success");
+        getCategories();
+      } else {
+        const errorData = await response.json();
+        showNotification(`Ошибка: ${errorData.detail || "Не удалось создать"}`, "error");
+      }
+    } catch (error) {
+      console.error("Ошибка при создании категории:", error);
+      showNotification("Произошла ошибка сети", "error");
+    }
+  };
 
   useEffect(() => {
     getReport()

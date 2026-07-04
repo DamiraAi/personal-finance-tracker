@@ -23,6 +23,11 @@ from routers import reports
 from fastapi.middleware.cors import CORSMiddleware # type: ignore
 
 app = FastAPI()
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://finance-backend-tj8e.onrender.com", # На всякий случай
+]
 @app.get("/")
 def root():
     return {
