@@ -23,6 +23,13 @@ from routers import reports
 from fastapi.middleware.cors import CORSMiddleware # type: ignore
 
 app = FastAPI()
+@app.get("/")
+def root():
+    return {
+        "message": "Finance API is running",
+        "status": "OK",
+        "docs": "/docs"
+    }
 
 app.add_middleware(
     CORSMiddleware,
