@@ -23,11 +23,22 @@ from routers import reports
 from fastapi.middleware.cors import CORSMiddleware # type: ignore
 
 app = FastAPI()
+
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://finance-backend-tj8e.onrender.com", # На всякий случай
+    "https://finance-backend-tj8e.onrender.com",
 ]
+
+# Важно: middleware настраивается ПОСЛЕ создания app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?|https://finance-backend-tj8e\.onrender\.com",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/")
 def root():
     return {
@@ -35,14 +46,6 @@ def root():
         "status": "OK",
         "docs": "/docs"
     }
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 Base.metadata.create_all(bind=engine)
 
