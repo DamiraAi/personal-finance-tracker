@@ -131,9 +131,18 @@ function Dashboard() {
       body: JSON.stringify({
         type: type,
         amount: parsedAmount,
-        description: description.trim(),
-        wallet_id: currentWalletId,
-        category_id: categoryId ? Number(categoryId) : null
+        description: description.trim() || "Без описания",
+        wallet_id: Number(currentWalletId),
+        
+        // НОВОЕ: Отправляем точную дату в формате ISO, который требует FastAPI
+        date: new Date().toISOString(),
+        
+        // Передаем ID категории (если не выбрана — передаем null или 0)
+        category_id: categoryId ? Number(categoryId) : null,
+        
+        // НОВОЕ: Добавляем person_id и debt_id из схемы бэкенда
+        person_id: null, 
+        debt_id: null
       })
     })
 

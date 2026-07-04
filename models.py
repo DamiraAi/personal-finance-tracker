@@ -2,6 +2,8 @@ import enum
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from database import Base
+from sqlalchemy import Column, Integer, Float, String, ForeignKey, DateTime
+from sqlalchemy.sql import func
 
 # 1. Перечисления для типов и статусов
 class TransactionType(str, enum.Enum):
@@ -83,6 +85,7 @@ class Transaction(Base):
     amount = Column(Float, nullable=False)
     type = Column(SQLEnum(TransactionType), nullable=False)
     description = Column(String, nullable=True)
+    date = Column(DateTime, server_default=func.now(), nullable=False)
     
     # Внешние ключи
     wallet_id = Column(Integer, ForeignKey("wallets.id", ondelete="CASCADE"), nullable=False)
