@@ -84,6 +84,8 @@ class Transaction(BaseModel):
     person_id: int | None = None
     debt_id: int | None = None
     wallet_id: int
+    to_wallet_id: int | None = None
+    date: datetime | None = None
 
     @model_validator(mode='after')
     def validate_transaction_logic(self) -> 'Transaction':
