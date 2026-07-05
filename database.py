@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from models import Category
+
 DATABASE_URL = "sqlite:///./finance.db"
 
 engine = create_engine(
@@ -16,14 +16,17 @@ SessionLocal = sessionmaker(
 
 Base = declarative_base()
 
-# ДОБАВЛЯЕМ СЮДА:
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
 def create_default_categories(db, user_id: int):
+    # ЛОКАЛЬНЫЙ ИМПОРТ: перенесли внутрь функции, чтобы избежать циклической зависимости
+    from models import Category 
+    
     exists = db.query(Category).filter(Category.user_id == user_id).first()
     
     if not exists:
