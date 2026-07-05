@@ -77,7 +77,7 @@ class Wallet(Base):
     # Связи
     user = relationship("User", back_populates="wallets")
     transactions = relationship("Transaction", back_populates="wallet", cascade="all, delete-orphan")
-
+    transactions = relationship("Transaction", foreign_keys="[Transaction.wallet_id]", back_populates="wallet")
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -90,6 +90,9 @@ class Transaction(Base):
     # Внешние ключи
     wallet_id = Column(Integer, ForeignKey("wallets.id", ondelete="CASCADE"), nullable=False)
     to_wallet_id = Column(Integer, ForeignKey("wallets.id"), nullable=True)
+    wallet = relationship("Wallet", foreign_keys=[wallet_id], back_populates="transactions")
+    to_wallet = relationship("Wallet", foreign_keys=[to_wallet_id])
+    
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)  # Если удалить категорию, транзакции останутся
     person_id = Column(Integer, ForeignKey("persons.id"), nullable=True)
     debt_id = Column(Integer, ForeignKey("debts.id"), nullable=True)
