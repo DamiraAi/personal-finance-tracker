@@ -16,14 +16,14 @@ def create_transaction(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-
+    
     if transaction.amount <= 0:
         raise HTTPException(
             status_code=400,
             detail="Amount must be positive"
         )
 
-    # -------- WALLET --------
+    # -------- WALLET (ОТКУДА) --------
 
     wallet = db.query(models.Wallet).filter(
         models.Wallet.id == transaction.wallet_id,
@@ -36,10 +36,34 @@ def create_transaction(
             detail="Wallet not found"
         )
 
+    # -------- TO_WALLET (КУДА) — ТОЛЬКО ДЛЯ ПЕРЕВОДОВ --------
+    to_wallet = None
+    if transaction.type == schemas.TransactionType.transfer:
+        if not transaction.to_wallet_id:
+            raise HTTPException(
+                status_code=400,
+                detail="For transfer, to_wallet_id is required"
+            )
+        if transaction.wallet_id == transaction.to_wallet_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot transfer money to the same wallet"
+            )
+
+        to_wallet = db.query(models.Wallet).filter(
+            models.Wallet.id == transaction.to_wallet_id,
+            models.Wallet.user_id == current_user.id
+        ).first()
+
+        if to_wallet is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Destination wallet not found"
+            )
+
     # -------- CATEGORY --------
-
-    if transaction.category_id:
-
+    # Категорию проверяем только если это НЕ перевод (у переводов нет категории)
+    if transaction.category_id and transaction.type != schemas.TransactionType.transfer:
         category = db.query(models.Category).filter(
             models.Category.id == transaction.category_id
         ).first()
@@ -53,7 +77,6 @@ def create_transaction(
     # -------- PERSON --------
 
     if transaction.person_id:
-
         person = db.query(models.Person).filter(
             models.Person.id == transaction.person_id
         ).first()
@@ -67,34 +90,29 @@ def create_transaction(
     # -------- CREATE DEBT --------
 
     if transaction.type == schemas.TransactionType.loan_given:
-
         new_debt = models.Debt(
             person_id=transaction.person_id,
             amount=transaction.amount,
             type=schemas.DebtType.they_owe,
             status=schemas.DebtStatus.active
         )
-
         db.add(new_debt)
 
     elif transaction.type == schemas.TransactionType.loan_taken:
-
         new_debt = models.Debt(
             person_id=transaction.person_id,
             amount=transaction.amount,
             type=schemas.DebtType.we_owe,
             status=schemas.DebtStatus.active
         )
-
         db.add(new_debt)
 
     # -------- REPAY DEBT --------
 
-    if transaction.type in [schemas.
-        TransactionType.loan_repaid_to_us,
+    if transaction.type in [
+        schemas.TransactionType.loan_repaid_to_us,
         schemas.TransactionType.loan_repaid_by_us
     ]:
-
         if transaction.debt_id is None:
             raise HTTPException(
                 status_code=400,
@@ -124,26 +142,27 @@ def create_transaction(
 
     # -------- BALANCE --------
 
-    if transaction.type in [
-        "income",
-        "loan_taken",
-        "loan_repaid_to_us"
-    ]:
+    # 1. Логика для ПЕРЕВОДА
+    if transaction.type == schemas.TransactionType.transfer:
+        if wallet.balance < transaction.amount:
+            raise HTTPException(
+                status_code=400,
+                detail="Not enough balance in source wallet"
+            )
+        wallet.balance -= transaction.amount  # Списываем со счета А
+        to_wallet.balance += transaction.amount  # Зачисляем на счет Б
+        db.add(to_wallet) # Важно добавить в сессию второй измененный кошелек
 
+    # 2. Твоя существующая логика для доходов, долгов и расходов
+    elif transaction.type in ["income", "loan_taken", "loan_repaid_to_us"]:
         wallet.balance += transaction.amount
 
-    elif transaction.type in [
-        "expense",
-        "loan_given",
-        "loan_repaid_by_us"
-    ]:
-
+    elif transaction.type in ["expense", "loan_given", "loan_repaid_by_us"]:
         if wallet.balance < transaction.amount:
             raise HTTPException(
                 status_code=400,
                 detail="Not enough balance"
             )
-
         wallet.balance -= transaction.amount
 
     # -------- SAVE --------
@@ -152,12 +171,15 @@ def create_transaction(
         type=transaction.type,
         amount=transaction.amount,
         description=transaction.description,
-        category_id=transaction.category_id,
+        # Если это перевод, принудительно ставим категорию в None
+        category_id=transaction.category_id if transaction.type != schemas.TransactionType.transfer else None,
         person_id=transaction.person_id,
         debt_id=transaction.debt_id,
         wallet_id=transaction.wallet_id,
+        to_wallet_id=transaction.to_wallet_id if transaction.type == schemas.TransactionType.transfer else None, # Сохраняем кошелек-получатель
         user_id=current_user.id
     )
+    
     db.add(wallet)
     db.add(db_transaction)
     db.commit()
@@ -196,28 +218,49 @@ def delete_transaction(
             detail="Transaction not found"
         )
 
+    # Основной кошелек (Откуда были списаны деньги при переводе или расходе)
     wallet = db.query(models.Wallet).filter(
         models.Wallet.id == transaction.wallet_id
     ).first()
 
-    if transaction.type in [
+    # -------- ЛОГИКА БАЛАНСОВ --------
+
+    # 1. Если удаляем перевод (transfer) — <-- НОВОЕ
+    if transaction.type == "transfer" or transaction.type == schemas.TransactionType.transfer:
+        # Находим кошелек-получатель (Куда пришли деньги)
+        to_wallet = db.query(models.Wallet).filter(
+            models.Wallet.id == transaction.to_wallet_id
+        ).first()
+
+        if to_wallet is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Destination wallet not found"
+            )
+
+        # Делаем откат (зеркальное действие):
+        wallet.balance += transaction.amount     # Возвращаем на карту/счет списания
+        to_wallet.balance -= transaction.amount    # Забираем из наличных/счета зачисления
+        db.add(to_wallet)                          # Добавляем второй кошелек в сессию
+
+    # 2. Если удаляем доходы и похожие операции
+    elif transaction.type in [
         "income",
         "loan_taken",
         "loan_repaid_to_us"
     ]:
-
         wallet.balance -= transaction.amount
 
+    # 3. Если удаляем расходы и похожие операции
     elif transaction.type in [
         "expense",
         "loan_given",
         "loan_repaid_by_us"
     ]:
-
         wallet.balance += transaction.amount
 
+    # -------- УДАЛЕНИЕ --------
     db.delete(transaction)
-
     db.commit()
 
     return {
@@ -230,7 +273,7 @@ def delete_transaction(
 @router.put("/transactions/{transaction_id}")
 def update_transaction(
     transaction_id: int,
-    tx_data: schemas.Transaction,  # Используем твою готовую схему
+    tx_data: schemas.Transaction,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
@@ -243,38 +286,100 @@ def update_transaction(
     if not db_tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
 
-    # 2. Ищем кошелек для пересчета баланса
-    wallet = db.query(models.Wallet).filter(
+
+    # --- 2. ОТКАТ СТАРОГО БАЛАНСА (на основе старых данных db_tx) ---
+    
+    # Ищем старый основной кошелек
+    old_wallet = db.query(models.Wallet).filter(
         models.Wallet.id == db_tx.wallet_id,
         models.Wallet.user_id == current_user.id
     ).first()
+    
+    if not old_wallet:
+        raise HTTPException(status_code=404, detail="Old source wallet not found")
 
-    if not wallet:
-        raise HTTPException(status_code=404, detail="Wallet not found")
+    # Откат старого баланса для ПЕРЕВОДА
+    if db_tx.type == "transfer" or db_tx.type == schemas.TransactionType.transfer:
+        old_to_wallet = db.query(models.Wallet).filter(
+            models.Wallet.id == db_tx.to_wallet_id,
+            models.Wallet.user_id == current_user.id
+        ).first()
+        
+        if not old_to_wallet:
+            raise HTTPException(status_code=404, detail="Old destination wallet not found")
+            
+        old_wallet.balance += db_tx.amount      # Возвращаем на кошелек-источник
+        old_to_wallet.balance -= db_tx.amount   # Списываем с кошелька-получателя
+        db.add(old_to_wallet)
 
-    # --- ОТКАТ СТАРОГО БАЛАНСА (как при удалении) ---
-    if db_tx.type in ["income", "loan_taken", "loan_repaid_to_us"]:
-        wallet.balance -= db_tx.amount
+    # Откат старого баланса для обычных операций
+    elif db_tx.type in ["income", "loan_taken", "loan_repaid_to_us"]:
+        old_wallet.balance -= db_tx.amount
     elif db_tx.type in ["expense", "loan_given", "loan_repaid_by_us"]:
-        wallet.balance += db_tx.amount
+        old_wallet.balance += db_tx.amount
 
-    # --- ПРИМЕНЕНИЕ НОВОГО БАЛАНСА (как при создании) ---
-    if tx_data.type in ["income", "loan_taken", "loan_repaid_to_us"]:
-        wallet.balance += tx_data.amount
+
+    # --- 3. НАКАТ НОВОГО БАЛАНСА (на основе новых данных tx_data) ---
+    
+    # Ищем новый основной кошелек (он мог измениться в форме)
+    new_wallet = db.query(models.Wallet).filter(
+        models.Wallet.id == tx_data.wallet_id,
+        models.Wallet.user_id == current_user.id
+    ).first()
+
+    if not new_wallet:
+        raise HTTPException(status_code=404, detail="New source wallet not found")
+
+    # Накат нового баланса для ПЕРЕВОДА
+    if tx_data.type == "transfer" or tx_data.type == schemas.TransactionType.transfer:
+        if not tx_data.to_wallet_id:
+            raise HTTPException(status_code=400, detail="For transfer, to_wallet_id is required")
+        if tx_data.wallet_id == tx_data.to_wallet_id:
+            raise HTTPException(status_code=400, detail="Cannot transfer money to the same wallet")
+
+        new_to_wallet = db.query(models.Wallet).filter(
+            models.Wallet.id == tx_data.to_wallet_id,
+            models.Wallet.user_id == current_user.id
+        ).first()
+
+        if not new_to_wallet:
+            raise HTTPException(status_code=404, detail="New destination wallet not found")
+
+        # Проверяем, хватает ли денег на новом кошельке-источнике
+        if new_wallet.balance < tx_data.amount:
+            raise HTTPException(status_code=400, detail="Not enough balance for this transfer")
+
+        new_wallet.balance -= tx_data.amount    # Списываем с нового кошелька-источника
+        new_to_wallet.balance += tx_data.amount   # Зачисляем на новый кошелек-получатель
+        db.add(new_to_wallet)
+
+    # Накат нового баланса для обычных операций
+    elif tx_data.type in ["income", "loan_taken", "loan_repaid_to_us"]:
+        new_wallet.balance += tx_data.amount
     elif tx_data.type in ["expense", "loan_given", "loan_repaid_by_us"]:
-        if wallet.balance < tx_data.amount:
+        if new_wallet.balance < tx_data.amount:
             raise HTTPException(status_code=400, detail="Not enough balance for this update")
-        wallet.balance -= tx_data.amount
+        new_wallet.balance -= tx_data.amount
 
-    # 3. Обновляем поля транзакции
+
+    # --- 4. ОБНОВЛЕНИЕ ПОЛЕЙ В БАЗЕ ДАННЫХ ---
     db_tx.type = tx_data.type
     db_tx.amount = tx_data.amount
     db_tx.description = tx_data.description
-    db_tx.category_id = tx_data.category_id
     db_tx.person_id = tx_data.person_id
     db_tx.debt_id = tx_data.debt_id
     db_tx.wallet_id = tx_data.wallet_id
+    
+    # Если это перевод — сохраняем to_wallet_id и стираем категорию
+    if tx_data.type == schemas.TransactionType.transfer or tx_data.type == "transfer":
+        db_tx.to_wallet_id = tx_data.to_wallet_id
+        db_tx.category_id = None
+    else:
+        db_tx.to_wallet_id = None
+        db_tx.category_id = tx_data.category_id
 
+    db.add(old_wallet)
+    db.add(new_wallet)
     db.commit()
     db.refresh(db_tx)
     return db_tx

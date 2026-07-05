@@ -89,6 +89,7 @@ class Transaction(Base):
     
     # Внешние ключи
     wallet_id = Column(Integer, ForeignKey("wallets.id", ondelete="CASCADE"), nullable=False)
+    to_wallet_id = Column(Integer, ForeignKey("wallets.id"), nullable=True)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)  # Если удалить категорию, транзакции останутся
     person_id = Column(Integer, ForeignKey("persons.id"), nullable=True)
     debt_id = Column(Integer, ForeignKey("debts.id"), nullable=True)

@@ -30,7 +30,7 @@ function Dashboard() {
   const [walletName, setWalletName] = useState("")
   const [walletCurrency, setWalletCurrency] = useState("")
   const [editingWalletId, setEditingWalletId] = useState(null) // null = создание, id = редактирование
-
+  const [toWalletId, setToWalletId] = useState("");
   // Стейты форм создания транзакций
   const [amount, setAmount] = useState("")
   const [description, setDescription] = useState("")
@@ -142,7 +142,10 @@ function Dashboard() {
         
         // НОВОЕ: Добавляем person_id и debt_id из схемы бэкенда
         person_id: null, 
-        debt_id: null
+        debt_id: null,
+        // Внутри тела запроса при создании транзакции убедись, что передается:
+        to_wallet_id: type === "transfer" ? parseInt(toWalletId) : null,
+        category_id: type === "transfer" ? null : parseInt(categoryId),
       })
     })
 
@@ -597,11 +600,36 @@ function Dashboard() {
             <option value="loan_repaid_by_us">Loan Repaid By Us (Я вернул долг)</option>
           </select>
 
-          <select value={walletId} onChange={(e) => { setWalletId(e.target.value); getTransactions(e.target.value); }} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px", width: "95%" }}>
-            <option value="">Select Wallet</option>
-            {wallets.map(w => <option key={w.id} value={w.id}>{w.name} ({w.currency})</option>)}
-          </select>
-          <br />
+          {/* ЕСЛИ ЭТО ПЕРЕВОД - ПОКАЗЫВАЕМ ДВА КОШЕЛЬКА */}
+          {type === "transfer" ? (
+            <>
+              {/* Кошелек Откуда */}
+              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>From Wallet (Откуда):</label>
+              <select value={walletId} onChange={(e) => setWalletId(e.target.value)} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px", width: "95%" }}>
+                <option value="">Select Source Wallet</option>
+                {wallets.map(w => <option key={w.id} value={w.id}>{w.name} ({w.currency})</option>)}
+              </select>
+
+              {/* Кошелек Куда */}
+              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>To Wallet (Куда):</label>
+              <select value={toWalletId} onChange={(e) => setToWalletId(e.target.value)} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px", width: "95%" }}>
+                <option value="">Select Destination Wallet</option>
+                {/* Исключаем из списка тот кошелек, который выбран в качестве источника */}
+                {wallets.filter(w => w.id.toString() !== walletId.toString()).map(w => (
+                  <option key={w.id} value={w.id}>{w.name} ({w.currency})</option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <>
+              {/* ОБЫЧНЫЙ ВЫБОР КОШЕЛЬКА ДЛЯ INCOME/EXPENSE */}
+              <select value={walletId} onChange={(e) => { setWalletId(e.target.value); if(typeof getTransactions === 'function') getTransactions(e.target.value); }} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px", width: "95%" }}>
+                <option value="">Select Wallet</option>
+                {wallets.map(w => <option key={w.id} value={w.id}>{w.name} ({w.currency})</option>)}
+              </select>
+              <br />
+            </>
+          )}
 
           
           
@@ -684,6 +712,7 @@ function Dashboard() {
               <option value="all">Все типы</option>
               <option value="income">Income</option>
               <option value="expense">Expense</option>
+              <option value="transfer">Transfer (Перевод между счетами)</option>
               <option value="loan_given">Loan Given</option>
               <option value="loan_taken">Loan Taken</option>
               <option value="loan_repaid_to_us">Loan Repaid To Us</option>

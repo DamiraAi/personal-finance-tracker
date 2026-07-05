@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, model_validator
 
 
 # -------- USER --------
@@ -67,6 +67,7 @@ class Debt(BaseModel):
 class TransactionType(str, Enum):
     income = "income"
     expense = "expense"
+    transfer = "transfer"
     loan_given = "loan_given"
     loan_taken = "loan_taken"
     loan_repaid_by_us = "loan_repaid_by_us"
@@ -82,4 +83,21 @@ class Transaction(BaseModel):
     person_id: int | None = None
     debt_id: int | None = None
     wallet_id: int
+
+    @model_validator(mode='after')
+    def validate_transaction_logic(self) -> 'Transaction':
+        # Если это перевод
+        if self.type == TransactionType.transfer:
+            if self.to_wallet_id is None:
+                raise ValueError("Для перевода необходимо указать 'to_wallet_id'")
+            if self.wallet_id == self.to_wallet_id:
+                raise ValueError("Нельзя перевести деньги на тот же самый кошелек")
+        
+        # Если это стандартный доход или расход
+        elif self.type in (TransactionType.income, TransactionType.expense):
+            if self.category_id is None:
+                raise ValueError(f"Для типа '{self.type.value}' необходимо указать 'category_id'")
+                
+        return self
+    
     date: datetime| None = None
