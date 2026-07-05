@@ -137,8 +137,7 @@ function Dashboard() {
         // НОВОЕ: Отправляем точную дату в формате ISO, который требует FastAPI
         date: new Date().toISOString(),
         
-        // Передаем ID категории (если не выбрана — передаем null или 0)
-        category_id: categoryId ? Number(categoryId) : null,
+       
         
         // НОВОЕ: Добавляем person_id и debt_id из схемы бэкенда
         person_id: null, 
@@ -594,6 +593,8 @@ function Dashboard() {
           <select value={type} onChange={(e) => setType(e.target.value)} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px", width: "95%" }}>
             <option value="income">Income</option>
             <option value="expense">Expense</option>
+            <option value="transfer">Transfer / Перевод</option>
+
             <option value="loan_given">Loan Given (Дал в долг)</option>
             <option value="loan_taken">Loan Taken (Взял в долг)</option>
             <option value="loan_repaid_to_us">Loan Repaid To Us (Мне вернули долг)</option>
@@ -747,6 +748,7 @@ function Dashboard() {
                       <select value={editTxType} onChange={(e) => setEditTxType(e.target.value)} style={{ padding: "8px", borderRadius: "6px", backgroundColor: "#1e293b", color: "white", border: "1px solid #475569", marginRight: "10px", marginBottom: "10px" }}>
                         <option value="income">Income</option>
                         <option value="expense">Expense</option>
+                        <option value="transfer">Transfer / Перевод</option>
                         <option value="loan_given">Loan Given</option>
                         <option value="loan_taken">Loan Taken</option>
                         <option value="loan_repaid_to_us">Loan Repaid To Us</option>

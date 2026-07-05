@@ -9,6 +9,7 @@ from sqlalchemy.sql import func
 class TransactionType(str, enum.Enum):
     income = "income"
     expense = "expense"
+    transfer = "transfer"
     loan_given = "loan_given"
     loan_taken = "loan_taken"
     loan_repaid_to_us = "loan_repaid_to_us"
