@@ -53,7 +53,7 @@ def root():
         "docs": "/docs"
     }
 
-Base.metadata.create_all(bind=engine)
+
 
 # =====================================================
 # AUTH

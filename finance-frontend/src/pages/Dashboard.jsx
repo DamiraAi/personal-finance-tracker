@@ -603,11 +603,7 @@ function Dashboard() {
           </select>
           <br />
 
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", width: "95%", marginBottom: "15px" }}>
-            <option value="">Select Category (Optional)</option>
-            {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-          </select>
-          <br />
+          
           
           {/* Умный селектор категорий: подстраивается под тип операции */}
           {(type === "income" || type === "expense") && (
