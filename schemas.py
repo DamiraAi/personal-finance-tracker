@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 from enum import Enum
-from datetime import datetime, model_validator
-
+from datetime import datetime
+from pydantic import BaseModel, model_validator 
+from typing import Optional, List
 
 # -------- USER --------
 
