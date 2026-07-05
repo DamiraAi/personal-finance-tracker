@@ -4,8 +4,11 @@ from fastapi.security import OAuth2PasswordRequestForm # type: ignore
 from database import Base, engine
 import models
 import schemas
+from database import create_default_categories
 
-Base.metadata.create_all(bind=engine)
+from fastapi import Depends, APIRouter
+
+
 
 from auth import (
     hash_password,
@@ -79,21 +82,16 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)  # Получаем сгенерированный db_user.id
 
-    # МИКРО-ЦИКЛ: Автоматически создаем персональный набор топ-категорий для нового юзера
+    # ВЫЗЫВАЕМ ФУНКЦИЮ ИЗ DATABASE.PY:
     try:
-        for cat_name in DEFAULT_CATEGORIES:
-            db_category = models.Category(
-                name=cat_name,
-                user_id=db_user.id  # Жесткая привязка к конкретному пользователю
-            )
-            db.add(db_category)
-        db.commit()
+        from database import create_default_categories
+        create_default_categories(db, user_id=db_user.id)
     except Exception as e:
         # Если что-то пойдет не так с категориями, регистрация пользователя все равно завершится успешно
         print(f"Ошибка при создании дефолтных категорий для пользователя {db_user.id}: {e}")
 
     return {
-        "message": "User created successfully and default categories initialized"
+        "message": "User created successfully and default professional categories initialized"
     }
 
 

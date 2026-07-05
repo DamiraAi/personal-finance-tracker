@@ -609,6 +609,26 @@ function Dashboard() {
           </select>
           <br />
           
+          {/* Умный селектор категорий: подстраивается под тип операции */}
+          {(type === "income" || type === "expense") && (
+            <>
+              <select 
+                value={categoryId} 
+                onChange={(e) => setCategoryId(e.target.value)} 
+                style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", width: "95%", marginBottom: "15px" }}
+              >
+                <option value="">Select Category (Optional)</option>
+                {categories
+                  .filter(cat => cat.type === type)
+                  .map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))
+                }
+              </select>
+              <br />
+            </>
+          )}
+          
           <button onClick={createTransaction} style={{ width: "100%", padding: "12px", backgroundColor: "#22c55e", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>Create Transaction</button>
         </div>
       </div>
