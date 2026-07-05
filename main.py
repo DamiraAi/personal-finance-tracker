@@ -8,6 +8,7 @@ from database import create_default_categories
 
 from fastapi import Depends, APIRouter
 
+models.Base.metadata.drop_all(bind=engine)
 
 
 from auth import (
