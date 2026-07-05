@@ -76,7 +76,7 @@ class Wallet(Base):
 
     # Связи
     user = relationship("User", back_populates="wallets")
-    transactions = relationship("Transaction", back_populates="wallet", cascade="all, delete-orphan")
+    
     transactions = relationship("Transaction", foreign_keys="[Transaction.wallet_id]", back_populates="wallet")
 
 class Transaction(Base):
@@ -102,7 +102,7 @@ class Transaction(Base):
     debt = relationship("Debt", back_populates="transactions")
     person = relationship("Person", back_populates="transactions")
     category = relationship("Category", back_populates="transactions")
-    wallet = relationship("Wallet", back_populates="transactions")
+    
     user = relationship("User", back_populates="transactions")
     
 
