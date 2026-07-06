@@ -19,9 +19,18 @@ class UserLogin(BaseModel):
 
 # -------- CATEGORY --------
 
-class Category(BaseModel):
-    id: int | None = None
+class CategoryCreate(BaseModel):
     name: str
+    type: str  # "income" или "expense" (чтобы разделять категории доходов и расходов)
+
+class CategoryResponse(BaseModel):
+    id: int
+    name: str
+    type: str
+    user_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
 
 
 # -------- PERSON --------

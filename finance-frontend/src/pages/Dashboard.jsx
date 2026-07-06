@@ -41,7 +41,7 @@ function Dashboard() {
   // Категории: имя и тип (расход/доход)
   const [newCategoryName, setNewCategoryName] = useState("")
   const [newCategoryType, setNewCategoryType] = useState("expense") 
-
+  const [showNewCategoryForm, setShowNewCategoryForm] = useState(false)
   // Стейты редактирования транзакции
   const [editingTxId, setEditingTxId] = useState(null)
   const [editTxAmount, setEditTxAmount] = useState("")
@@ -375,6 +375,7 @@ function Dashboard() {
   // 2. Создание категории
   const handleCreateCategory = async (e) => {
     e.preventDefault();
+    const trimmedName = newCategoryName.trim()
     if (!newCategoryName.trim()) return;
 
     try {
@@ -387,12 +388,15 @@ function Dashboard() {
         },
         body: JSON.stringify({ 
           name: newCategoryName,
-          type: newCategoryType
+          type: type === "income" ? "income" : "expense"
         })
       });
 
       if (response.ok) {
-        setNewCategoryName("");
+        setCategories([...categories, createdCategory]) 
+        setCategoryId(createdCategory.id)
+        setNewCategoryName("")
+        setShowNewCategoryForm(false) 
         showNotification("Категория успешно создана!", "success");
         getCategories();
       } else {
@@ -636,23 +640,67 @@ function Dashboard() {
           
           {/* Умный селектор категорий: подстраивается под тип операции */}
           {(type === "income" || type === "expense") && (
-            <>
-              <select 
-                value={categoryId} 
-                onChange={(e) => setCategoryId(e.target.value)} 
-                style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", width: "95%", marginBottom: "15px" }}
+            <div style={{ marginBottom: "15px", width: "95%" }}>
+              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>
+                Category:
+              </label>
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <select
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  style={{ flex: 1, padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
               >
-                <option value="">Select Category (Optional)</option>
-                {categories
-                  .filter(cat => cat.type === type)
-                  .map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))
+                  <option value="">Select Category (Optional)</option>
+                  {categories
+                    .filter(cat => !cat.type || cat.type === type)
+                    .map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))
                 }
               </select>
-              <br />
-            </>
+
+              <button
+                type="button"
+                onClick={() => setShowNewCategoryForm(!showNewCategoryForm)}
+                style={{ padding: "0 15px", borderRadius: "8px", backgroundColor: "#10b981", color: "white", border: "none", cursor: "pointer", fontSize: "1.2rem", fontWeight: "bold" }}
+              >
+                +
+              </button>
+            </div>
+
+            {/* ИЗМЕНЕНО: мини-форма создания категории без перезагрузки страницы */}
+            {showNewCategoryForm && (
+              <form onSubmit={handleCreateCategory} style={{ marginTop: "10px", padding: "10px", borderRadius: "8px", backgroundColor: "#1e293b", border: "1px dashed #475569" }}>
+              <input
+                type="text"
+                placeholder="Название, например Крипта"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                style={{ width: "90%", padding: "8px", borderRadius: "6px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "8px" }}
+              />
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button type="submit" style={{ padding: "5px 10px", borderRadius: "6px", backgroundColor: "#3b82f6", color: "white", border: "none", cursor: "pointer", fontSize: "0.85rem" }}>
+                  Save
+                </button>
+              
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewCategoryForm(false)
+                    setNewCategoryName("")
+                  }}
+                  style={{ padding: "5px 10px", borderRadius: "6px", backgroundColor: "#64748b", color: "white", border: "none", cursor: "pointer", fontSize: "0.85rem" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           )}
+        </div>
+      )}         
           
           <button onClick={createTransaction} style={{ width: "100%", padding: "12px", backgroundColor: "#22c55e", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>Create Transaction</button>
         </div>
