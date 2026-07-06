@@ -250,31 +250,8 @@ function Dashboard() {
     setWalletCurrency("")
   }
 
-  // Создание категории
-  const createCategory = async () => {
-    if (!newCategoryName.trim()) return
-    
-    const token = localStorage.getItem("token")
-    const response = await fetch(`${BASE_URL}/categories`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        name: newCategoryName.trim()
-      })
-    })
-
-    if (response.ok) {
-      showNotification("Категория добавлена")
-      setNewCategoryName("")
-      getCategories()
-    } else {
-      const errorData = await response.json()
-      showNotification(errorData.detail || "Ошибка создания категории", "error")
-    }
-  }
+  
+  
 
   const startEditingTransaction = (tx) => {
     setEditingTxId(tx.id || tx.transaction_id)
@@ -580,14 +557,7 @@ function Dashboard() {
             )}
           </div>
         </div>
-
-        {/* CREATE CATEGORY */}
-        <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px" }}>
-          <h2 style={{ fontSize: "1.2rem", marginBottom: "15px", borderBottom: "1px solid #334155", paddingBottom: "10px" }}>Create Category</h2>
-          <input type="text" placeholder="Category name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} style={{ width: "90%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px" }} /><br />
-          <button onClick={createCategory} style={{ width: "100%", padding: "12px", backgroundColor: "#a855f7", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>Create Category</button>
-        </div>
-
+        
         {/* CREATE TRANSACTION */}
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px" }}>
           <h2 style={{ fontSize: "1.2rem", marginBottom: "15px", borderBottom: "1px solid #334155", paddingBottom: "10px" }}>Create Transaction</h2>
