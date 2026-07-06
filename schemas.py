@@ -111,5 +111,12 @@ class Transaction(BaseModel):
                 raise ValueError(f"Для типа '{self.type.value}' необходимо указать 'category_id'")
                 
         return self
-    
+
+class CategoryReportItem(BaseModel):
+    category_name: str
+    total_amount: float
+
+class MonthlyReportResponse(BaseModel):
+    income: List[CategoryReportItem]
+    expense: List[CategoryReportItem]   
     date: datetime| None = None

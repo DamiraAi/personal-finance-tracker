@@ -4,7 +4,6 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 from typing import Optional
 
-# Импортируем твои модели и типы перечислений (Enums)
 from database import get_db
 from models import Transaction, Category, User, TransactionType
 from auth import get_current_user
@@ -39,7 +38,7 @@ def get_report(
         else:
             start = now - timedelta(days=7)
 
-    # 2. Привязываем фильтры к реальным объектам Enum из модели TransactionType
+    # 2. Привязываем фильтры к реальным объектам Enum
     incoming_types = [
         TransactionType.income, 
         TransactionType.loan_taken, 
@@ -51,6 +50,10 @@ def get_report(
         TransactionType.loan_given, 
         TransactionType.loan_repaid_by_us
     ]
+
+    # [ОПЦИОНАЛЬНО] Защита от тестового спама триллионами. 
+    # Если хочешь отсечь аномальные цифры, раскомментируй строку ниже в фильтрах:
+    # Transaction.amount < 1000000000
 
     # 3. Считаем общий приток денег (Total Income)
     total_income = db.query(func.sum(Transaction.amount))\
@@ -70,7 +73,7 @@ def get_report(
             Transaction.date <= end
         ).scalar() or 0.0
 
-    # 5. Считаем расходы по категориям (делаем LEFT JOIN, чтобы учесть долги, у которых нет категории)
+    # 5. Считаем расходы по категориям
     expense_by_categories = db.query(Category.name, func.sum(Transaction.amount))\
         .select_from(Transaction)\
         .join(Category, Transaction.category_id == Category.id, isouter=True)\
@@ -85,14 +88,13 @@ def get_report(
 
     categories_data = []
     for name, total in expense_by_categories:
-        # Если категория пустая (для транзакций долгов), пишем понятное имя
         cat_name = name if name else "Долги / Кредиты"
         categories_data.append({
             "name": cat_name,
             "value": float(total)
         })
 
-    # 6. Собираем данные по дням для трендов
+    # 6. Собираем данные по дням для трендов (Оптимизировано под строки SQLite)
     income_by_day = db.query(func.date(Transaction.date), func.sum(Transaction.amount))\
         .filter(
             Transaction.user_id == current_user.id,
@@ -111,9 +113,11 @@ def get_report(
         )\
         .group_by(func.date(Transaction.date)).all()
 
-    # 7. Объединяем доходы и расходы по дням
+    # 7. Объединяем доходы и расходы по дням безопасно
     trends_dict = {}
+    
     for date_val, amount in income_by_day:
+        # Безопасное приведение к строке формата YYYY-MM-DD
         date_str = date_val.strftime("%Y-%m-%d") if hasattr(date_val, 'strftime') else str(date_val)
         trends_dict[date_str] = {"date": date_str, "Income": float(amount), "Expense": 0.0}
         

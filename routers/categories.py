@@ -38,7 +38,6 @@ def create_category(
 
     if not name:
         raise HTTPException(status_code=400, detail="Category name is required")
-    
     if category_data.type not in ["income", "expense"]:
         raise HTTPException(status_code=400, detail="Category type must be income or expense")
 

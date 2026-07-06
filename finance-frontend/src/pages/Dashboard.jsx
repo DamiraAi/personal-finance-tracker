@@ -24,6 +24,7 @@ function Dashboard() {
   const [wallets, setWallets] = useState([])
   const [transactions, setTransactions] = useState([])
   const [report, setReport] = useState(null)
+  const [reportData, setReportData] = useState({ income: [], expense: [] })
   const [categories, setCategories] = useState([])
 
   // Стейты форм кошельков (теперь используются и для создания, и для редактирования)
@@ -334,6 +335,22 @@ function Dashboard() {
     }
   }
 
+  const fetchReport = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      const response = await fetch(`${BASE_URL}/report?year=2026&month=7`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setReportData(data)
+      }
+    } catch (error) {
+      console.error("Ошибка при загрузке аналитики:", error)
+    }
+  }
+
   const getCategories = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -370,7 +387,9 @@ function Dashboard() {
       });
 
       if (response.ok) {
-        setCategories([...categories, createdCategory]) 
+        const createdCategory = await response.json()
+
+        setCategories([...categories, { ...createdCategory, type: createdCategory.type || type }]) 
         setCategoryId(createdCategory.id)
         setNewCategoryName("")
         setShowNewCategoryForm(false) 
@@ -389,6 +408,10 @@ function Dashboard() {
   useEffect(() => {
     getReport()
   }, [period, startDate, endDate])
+
+  useEffect(() => {
+    fetchReport()
+  }, [transactions])
 
   useEffect(() => {
     getWallets()
@@ -427,7 +450,7 @@ function Dashboard() {
   const currentTransactions = filteredTransactions.slice(indexOfFirstItem, indexOfLastItem)
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage)
 
-  const COLORS = ["#ef4444", "#3b82f6", "#eab308", "#a855f7", "#ec4899", "#22c55e", "#64748b"]
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"]
 
   const getTypeColor = (txType) => {
     if (["income", "loan_taken", "loan_repaid_to_us"].includes(txType)) return "#22c55e"
@@ -532,6 +555,68 @@ function Dashboard() {
               <Legend />
             </PieChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginTop: "30px", marginBottom: "30px", justifyContent: "space-around" }}>
+        <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "12px", width: "45%", minWidth: "300px", textAlign: "center" }}>
+          <h3 style={{ color: "white", marginBottom: "15px" }}>Аналитика Расходов</h3>
+          {reportData.expense.length === 0 ? (
+            <p style={{ color: "#64748b", padding: "40px 0" }}>Нет данных по расходам за этот месяц</p>
+          ) : (
+            <div style={{ width: "100%", height: 250 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={reportData.expense}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="total_amount"
+                    nameKey="category_name"
+                  >
+                    {reportData.expense.map((entry, index) => (
+                      <Cell key={`expense-cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => `${Number(value).toFixed(2)} ₺`} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "12px", width: "45%", minWidth: "300px", textAlign: "center" }}>
+          <h3 style={{ color: "white", marginBottom: "15px" }}>Аналитика Доходов</h3>
+          {reportData.income.length === 0 ? (
+            <p style={{ color: "#64748b", padding: "40px 0" }}>Нет данных по доходам за этот месяц</p>
+          ) : (
+            <div style={{ width: "100%", height: 250 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={reportData.income}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="total_amount"
+                    nameKey="category_name"
+                  >
+                    {reportData.income.map((entry, index) => (
+                      <Cell key={`income-cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => `${Number(value).toFixed(2)} ₺`} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       </div>
 
