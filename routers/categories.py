@@ -12,6 +12,7 @@ router = APIRouter()
 
 class CategoryCreate(BaseModel):
     name: str
+    type: str
 
 
 @router.get("/categories")
@@ -37,6 +38,9 @@ def create_category(
 
     if not name:
         raise HTTPException(status_code=400, detail="Category name is required")
+    
+    if category_data.type not in ["income", "expense"]:
+        raise HTTPException(status_code=400, detail="Category type must be income or expense")
 
     existing = db.query(models.Category).filter(
         models.Category.name == name,
@@ -46,8 +50,10 @@ def create_category(
     if existing:
         raise HTTPException(status_code=400, detail="Category already exists")
 
+    
     db_category = models.Category(
         name=name,
+        type=category_data.type,
         user_id=current_user.id,
     )
 
