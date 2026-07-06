@@ -19,21 +19,26 @@ def get_report(
     current_user: User = Depends(get_current_user)
 ):
     # 1. Логика фильтрации дат
+    # 1. Логика фильтрации дат (с защитой от пустых строк с фронтенда)
     now = datetime.utcnow()
     
-    if start_date and end_date:
+    # Если фронтенд прислал заполненные даты (не пустые и не None)
+    if start_date and end_date and start_date.strip() and end_date.strip():
         try:
-            start = datetime.strptime(start_date, "%Y-%m-%d")
-            end = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            start = datetime.strptime(start_date.strip(), "%Y-%m-%d")
+            end = datetime.strptime(end_date.strip(), "%Y-%m-%d").replace(hour=23, minute=59, second=59)
         except ValueError:
             raise HTTPException(status_code=400, detail="Неверный формат даты. Используйте ГГГГ-ММ-ДД")
     else:
+        # Приводим период к нижнему регистру на случай "Month" / "Week"
+        p = period.lower().strip() if period else "week"
+        
         end = now
-        if period == "week":
+        if p in ["week", "неделя"]:
             start = now - timedelta(days=7)
-        elif period == "month":
+        elif p in ["month", "месяц"]:
             start = now - timedelta(days=30)
-        elif period == "year":
+        elif p in ["year", "год"]:
             start = now - timedelta(days=365)
         else:
             start = now - timedelta(days=7)
@@ -51,9 +56,7 @@ def get_report(
         TransactionType.loan_repaid_by_us
     ]
 
-    # [ОПЦИОНАЛЬНО] Защита от тестового спама триллионами. 
-    # Если хочешь отсечь аномальные цифры, раскомментируй строку ниже в фильтрах:
-    # Transaction.amount < 1000000000
+    
 
     # 3. Считаем общий приток денег (Total Income)
     total_income = db.query(func.sum(Transaction.amount))\
