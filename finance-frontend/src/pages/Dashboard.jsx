@@ -27,6 +27,11 @@ function Dashboard() {
   const [reportData, setReportData] = useState({ income: [], expense: [] })
   const [categories, setCategories] = useState([])
 
+  // НОВОЕ: стейты для долгов
+  const [debts, setDebts] = useState([]);
+  const [people, setPeople] = useState([]);
+  const [newPersonName, setNewPersonName] = useState("");
+
   // Стейты форм кошельков (теперь используются и для создания, и для редактирования)
   const [walletName, setWalletName] = useState("")
   const [walletCurrency, setWalletCurrency] = useState("")
@@ -135,12 +140,10 @@ function Dashboard() {
         description: description.trim() || "Без описания",
         wallet_id: Number(currentWalletId),
         
-        
+        // Отправляем выбранную пользователем дату
         date: new Date(date).toISOString(),
         
-       
-        
-        // НОВОЕ: Добавляем person_id и debt_id из схемы бэкенда
+        // Добавляем person_id и debt_id из схемы бэкенда
         person_id: null, 
         debt_id: null,
         // Внутри тела запроса при создании транзакции убедись, что передается:
@@ -253,7 +256,6 @@ function Dashboard() {
   }
 
   
-  
 
   const startEditingTransaction = (tx) => {
     setEditingTxId(tx.id || tx.transaction_id)
@@ -339,7 +341,10 @@ function Dashboard() {
   const fetchReport = async () => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`${BASE_URL}/report?year=2026&month=7`, {
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = now.getMonth() + 1
+      const response = await fetch(`${BASE_URL}/report?year=${year}&month=${month}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
 
@@ -370,7 +375,7 @@ function Dashboard() {
     }
   };
 
-  // 2. Создание категории
+  // Создание категории
   const handleCreateCategory = async (e) => {
     e.preventDefault();
     const trimmedName = newCategoryName.trim()
@@ -409,6 +414,49 @@ function Dashboard() {
     }
   };
 
+  // НОВОЕ: Загрузка данных о долгах и людях
+  const fetchDebtsData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const debtsRes = await fetch(`${BASE_URL}/debts`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const peopleRes = await fetch(`${BASE_URL}/debts/people`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (debtsRes.ok) setDebts(await debtsRes.json());
+      if (peopleRes.ok) setPeople(await peopleRes.json());
+    } catch (err) {
+      console.error("Ошибка при загрузке долгов:", err);
+    }
+  };
+
+  // НОВОЕ: Создание нового человека (контакта для долга)
+  const handleCreatePerson = async (e) => {
+    e.preventDefault();
+    if (!newPersonName.trim()) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${BASE_URL}/debts/people?name=${encodeURIComponent(newPersonName.trim())}`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        setNewPersonName("");
+        showNotification("Контакт успешно добавлен!", "success");
+        fetchDebtsData();
+      } else {
+        showNotification("Не удалось добавить контакт", "error");
+      }
+    } catch (error) {
+      console.error("Ошибка при создании контакта:", error);
+      showNotification("Произошла ошибка сети", "error");
+    }
+  };
+
   useEffect(() => {
     getReport()
   }, [period, startDate, endDate])
@@ -420,6 +468,7 @@ function Dashboard() {
   useEffect(() => {
     getWallets()
     getCategories()
+    fetchDebtsData()
   }, [])
 
   useEffect(() => {
@@ -431,8 +480,6 @@ function Dashboard() {
     { date: "Tue", Income: 0, Expense: 0 },
     { date: "Wed", Income: 0, Expense: 0 },
   ]
-
-  
 
   // Фильтрация транзакций "на лету"
   const filteredTransactions = transactions.filter((tx) => {
@@ -609,6 +656,62 @@ function Dashboard() {
         </div>
       </div>
 
+      {/* НОВОЕ: Виджет долгов */}
+      <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "12px", marginBottom: "30px", color: "white" }}>
+        <h3 style={{ marginBottom: "20px", borderBottom: "1px solid #334155", paddingBottom: "10px" }}>👥 Учет долгов и обязательств</h3>
+
+        {/* Мини-форма добавления нового контакта */}
+        <form onSubmit={handleCreatePerson} style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+          <input
+            type="text"
+            placeholder="Имя контакта (например, Алина)"
+            value={newPersonName}
+            onChange={(e) => setNewPersonName(e.target.value)}
+            style={{ flex: 1, padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
+          />
+          <button
+            type="submit"
+            style={{ padding: "10px 20px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}
+          >
+            + Добавить контакт
+          </button>
+        </form>
+        
+        <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+          
+          {/* Колонка: Мне должны */}
+          <div style={{ flex: 1, minWidth: "280px", backgroundColor: "#0f172a", padding: "15px", borderRadius: "8px" }}>
+            <h4 style={{ color: "#10b981", marginBottom: "10px" }}>🟢 Мне должны (Дебиторы)</h4>
+            {debts.filter(d => d.type === "they_owe").length === 0 ? (
+              <p style={{ color: "#64748b", fontSize: "0.9rem" }}>Все долги возвращены! 🎉</p>
+            ) : (
+              debts.filter(d => d.type === "they_owe").map(d => (
+                <div key={d.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px dashed #334155" }}>
+                  <span>{people.find(p => p.id == d.person_id)?.name || "Кто-то"}</span>
+                  <span style={{ fontWeight: "bold", color: "#10b981" }}>{d.amount} ₺</span>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Колонка: Я должен */}
+          <div style={{ flex: 1, minWidth: "280px", backgroundColor: "#0f172a", padding: "15px", borderRadius: "8px" }}>
+            <h4 style={{ color: "#ef4444", marginBottom: "10px" }}>🔴 Я должен (Кредиты / Займы)</h4>
+            {debts.filter(d => d.type === "we_owe").length === 0 ? (
+              <p style={{ color: "#64748b", fontSize: "0.9rem" }}>Вы никому ничего не должны! 🚀</p>
+            ) : (
+              debts.filter(d => d.type === "we_owe").map(d => (
+                <div key={d.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px dashed #334155" }}>
+                  <span>{people.find(p => p.id == d.person_id)?.name || "Кредитор"}</span>
+                  <span style={{ fontWeight: "bold", color: "#ef4444" }}>{d.amount} ₺</span>
+                </div>
+              ))
+            )}
+          </div>
+
+        </div>
+      </div>
+
       {/* FORMS */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "30px" }}>
         
@@ -713,7 +816,7 @@ function Dashboard() {
               </button>
             </div>
 
-            {/* ИЗМЕНЕНО: мини-форма создания категории без перезагрузки страницы */}
+            {/* мини-форма создания категории без перезагрузки страницы */}
             {showNewCategoryForm && (
               <form onSubmit={handleCreateCategory} style={{ marginTop: "10px", padding: "10px", borderRadius: "8px", backgroundColor: "#1e293b", border: "1px dashed #475569" }}>
               <input

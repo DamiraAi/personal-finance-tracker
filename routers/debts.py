@@ -6,7 +6,43 @@ from auth import get_db, get_current_user
 
 router = APIRouter(prefix="/debts", tags=["Debts"])
 
-# 1. СОЗДАНИЕ ДОЛГА
+# 1. Получить все долги текущего пользователя (активные)
+@router.get("")
+@router.get("/")
+def get_user_debts(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    return db.query(models.Debt)\
+        .join(models.Person, models.Debt.person_id == models.Person.id)\
+        .filter(models.Person.user_id == current_user.id, models.Debt.status == "active")\
+        .all()
+
+
+# 2. Создать нового человека (контакт для долга)
+@router.post("/people")
+def create_person(
+    name: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    new_person = models.Person(name=name, user_id=current_user.id)
+    db.add(new_person)
+    db.commit()
+    db.refresh(new_person)
+    return new_person
+
+
+# 3. Получить список всех людей пользователя
+@router.get("/people")
+def get_people(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    return db.query(models.Person).filter(models.Person.user_id == current_user.id).all()
+
+
+# 4. СОЗДАНИЕ ДОЛГА
 @router.post("")
 @router.post("/")
 def create_debt(
@@ -37,17 +73,7 @@ def create_debt(
     return db_debt
 
 
-# 2. ПОЛУЧЕНИЕ ВСЕХ ДОЛГОВ
-@router.get("")
-@router.get("/")
-def get_debts(
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    return db.query(models.Debt).all()
-
-
-# 3. ФУНКЦИЯ ЧАСТИЧНОГО ИЛИ ПОЛНОГО ВОЗВРАТА ДОЛГА
+# 5. ФУНКЦИЯ ЧАСТИЧНОГО ИЛИ ПОЛНОГО ВОЗВРАТА ДОЛГА
 @router.post("/{debt_id}/repay")
 def repay_debt(
     debt_id: int, 
@@ -56,14 +82,12 @@ def repay_debt(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    # Находим долг
     debt = db.query(models.Debt).filter(models.Debt.id == debt_id).first()
     if not debt:
         raise HTTPException(status_code=404, detail="Долг не найден")
     if debt.status == models.DebtStatus.closed:
         return {"message": "Этот долг уже закрыт"}
 
-    # Проверяем, сколько уже было выплачено по этому долгу ранее
     repayments = db.query(models.Transaction).filter(
         models.Transaction.debt_id == debt_id,
         models.Transaction.type.in_([models.TransactionType.loan_repaid_by_us, models.TransactionType.loan_repaid_to_us])
@@ -75,10 +99,8 @@ def repay_debt(
     if amount_to_pay > remaining_before:
         raise HTTPException(status_code=400, detail=f"Сумма платежа больше остатка долга ({remaining_before})")
 
-    # Определяем тип транзакции возврата на основе типа долга
     t_type = models.TransactionType.loan_repaid_to_us if debt.type == models.DebtType.they_owe else models.TransactionType.loan_repaid_by_us
 
-    # Создаем транзакцию возврата (чтобы баланс кошелька тоже изменился!)
     new_transaction = models.Transaction(
         amount=amount_to_pay,
         type=t_type,
@@ -86,19 +108,16 @@ def repay_debt(
         person_id=debt.person_id,
         debt_id=debt.id,
         wallet_id=wallet_id,
-        user_id=current_user.id  # Берём ID из авторизованного пользователя
+        user_id=current_user.id
     )
     db.add(new_transaction)
 
-    # Меняем баланс кошелька, если связь настроена
-    # (при возврате нам — плюс, когда возвращаем мы — минус)
     if hasattr(new_transaction, 'wallet') and new_transaction.wallet:
         if t_type == models.TransactionType.loan_repaid_to_us:
             new_transaction.wallet.balance += amount_to_pay
         else:
             new_transaction.wallet.balance -= amount_to_pay
 
-    # Проверяем, закрылся ли долг полностью теперь
     if already_paid + amount_to_pay >= debt.amount:
         debt.status = models.DebtStatus.closed
 
@@ -111,13 +130,12 @@ def repay_debt(
     }
 
 
-# 4. ПОЛНЫЙ УМНЫЙ ОТЧЕТ: КОМУ И СКОЛЬКО ОСТАЛОСЬ
+# 6. ПОЛНЫЙ УМНЫЙ ОТЧЕТ: КОМУ И СКОЛЬКО ОСТАЛОСЬ
 @router.get("/report")
 def get_debts_report(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    # Находим все активные долги
     active_debts = db.query(models.Debt).filter(models.Debt.status == models.DebtStatus.active).all()
     
     they_owe_list = []
@@ -130,7 +148,6 @@ def get_debts_report(
             if person:
                 person_name = person.name
         
-        # Считаем, сколько по этому долгу уже вернули
         repayments = db.query(models.Transaction).filter(
             models.Transaction.debt_id == debt.id,
             models.Transaction.type.in_([models.TransactionType.loan_repaid_by_us, models.TransactionType.loan_repaid_to_us])
