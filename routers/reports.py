@@ -14,7 +14,9 @@ router = APIRouter(prefix="/report", tags=["Reports"])
 def get_report(
     period: str = "week",
     start_date: Optional[str] = None, 
-    end_date: Optional[str] = None, 
+    end_date: Optional[str] = None,
+    year: Optional[int] = None,   
+    month: Optional[int] = None,  
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -23,7 +25,14 @@ def get_report(
     now = datetime.utcnow()
     
     # Если фронтенд прислал заполненные даты (не пустые и не None)
-    if start_date and end_date and start_date.strip() and end_date.strip():
+    if year and month:
+        start = datetime(year, month, 1)
+        if month == 12:
+            end = datetime(year + 1, 1, 1) - timedelta(seconds=1)
+        else:
+            end = datetime(year, month + 1, 1) - timedelta(seconds=1)
+    elif start_date and end_date and start_date.strip() and end_date.strip():
+        
         try:
             start = datetime.strptime(start_date.strip(), "%Y-%m-%d")
             end = datetime.strptime(end_date.strip(), "%Y-%m-%d").replace(hour=23, minute=59, second=59)
@@ -88,6 +97,27 @@ def get_report(
         )\
         .group_by(Category.name)\
         .all()
+    income_by_categories = db.query(Category.name, func.sum(Transaction.amount))\
+        .select_from(Transaction)\
+        .join(Category, Transaction.category_id == Category.id, isouter=True)\
+        .filter(
+            Transaction.user_id == current_user.id,
+            Transaction.type.in_(incoming_types),
+            Transaction.date >= start,
+            Transaction.date <= end
+        )\
+        .group_by(Category.name)\
+        .all()
+    expense_list = [
+        {"category_name": name if name else "Без категории", "total_amount": float(total)}
+        for name, total in expense_by_categories
+    ]
+
+    income_list = [
+        {"category_name": name if name else "Без категории", "total_amount": float(total)}
+        for name, total in income_by_categories
+    ]
+
 
     categories_data = []
     for name, total in expense_by_categories:
@@ -158,5 +188,7 @@ def get_report(
         "total_expense": float(total_expense),
         "net": float(total_income - total_expense),
         "daily_data": daily_data,
-        "categories_data": categories_data 
+        "categories_data": categories_data, 
+        "income": income_list,      
+        "expense": expense_list 
     }
