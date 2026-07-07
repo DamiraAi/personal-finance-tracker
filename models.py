@@ -48,6 +48,7 @@ class Person(Base):
     __tablename__ = "persons"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"))
     
     # Связи
     debts = relationship("Debt", back_populates="person")

@@ -43,6 +43,7 @@ function Dashboard() {
   const [type, setType] = useState("income")
   const [walletId, setWalletId] = useState("")
   const [categoryId, setCategoryId] = useState("")
+  const [personId, setPersonId] = useState("")
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   // Категории: имя и тип (расход/доход)
   const [newCategoryName, setNewCategoryName] = useState("")
@@ -128,6 +129,11 @@ function Dashboard() {
       return
     }
 
+    if (["loan_given", "loan_taken", "loan_repaid_to_us", "loan_repaid_by_us"].includes(type) && !personId) {
+      showNotification("Выберите контакт для этой операции!", "error")
+      return
+    }
+
     const response = await fetch(`${BASE_URL}/transactions`, {
       method: "POST",
       headers: {
@@ -143,8 +149,10 @@ function Dashboard() {
         // Отправляем выбранную пользователем дату
         date: new Date(date).toISOString(),
         
-        // Добавляем person_id и debt_id из схемы бэкенда
-        person_id: null, 
+        // Для операций с долгами обязательно передаём person_id (иначе бэкенд упадёт с NOT NULL constraint)
+        person_id: ["loan_given", "loan_taken", "loan_repaid_to_us", "loan_repaid_by_us"].includes(type)
+          ? (personId ? parseInt(personId) : null)
+          : null,
         debt_id: null,
         // Внутри тела запроса при создании транзакции убедись, что передается:
         to_wallet_id: type === "transfer" ? parseInt(toWalletId) : null,
@@ -157,8 +165,10 @@ function Dashboard() {
       setAmount("")
       setDescription("")
       setCategoryId("")
+      setPersonId("")
       getWallets()
       getReport()
+      fetchDebtsData()
       setDate(new Date().toISOString().split("T")[0])
       if (currentWalletId) getTransactions(currentWalletId)
     } else {
@@ -783,8 +793,28 @@ function Dashboard() {
             </>
           )}
 
-          
-          
+          {/* Выбор контакта — только для операций с долгами */}
+          {["loan_given", "loan_taken", "loan_repaid_to_us", "loan_repaid_by_us"].includes(type) && (
+            <div style={{ marginBottom: "15px", width: "95%" }}>
+              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>
+                Контакт (кому / от кого):
+              </label>
+              <select
+                value={personId}
+                onChange={(e) => setPersonId(e.target.value)}
+                style={{ width: "100%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
+              >
+                <option value="">Выберите контакт</option>
+                {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              {people.length === 0 && (
+                <p style={{ color: "#94a3b8", fontSize: "0.8rem", marginTop: "5px" }}>
+                  Нет контактов — добавьте их в блоке "Учет долгов" ниже.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Умный селектор категорий: подстраивается под тип операции */}
           {(type === "income" || type === "expense") && (
             <div style={{ marginBottom: "15px", width: "95%" }}>
