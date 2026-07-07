@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 import models
 import schemas
-
+from datetime import datetime
 from database import get_db  
 from auth import get_current_user
 
@@ -177,7 +177,8 @@ def create_transaction(
         debt_id=transaction.debt_id,
         wallet_id=transaction.wallet_id,
         to_wallet_id=transaction.to_wallet_id if transaction.type == schemas.TransactionType.transfer else None, # Сохраняем кошелек-получатель
-        user_id=current_user.id
+        user_id=current_user.id,
+        date=transaction.date if transaction.date else datetime.utcnow()
     )
     
     db.add(wallet)

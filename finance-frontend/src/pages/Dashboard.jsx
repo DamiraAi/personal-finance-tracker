@@ -38,7 +38,7 @@ function Dashboard() {
   const [type, setType] = useState("income")
   const [walletId, setWalletId] = useState("")
   const [categoryId, setCategoryId] = useState("")
-  
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   // Категории: имя и тип (расход/доход)
   const [newCategoryName, setNewCategoryName] = useState("")
   const [newCategoryType, setNewCategoryType] = useState("expense") 
@@ -135,8 +135,8 @@ function Dashboard() {
         description: description.trim() || "Без описания",
         wallet_id: Number(currentWalletId),
         
-        // НОВОЕ: Отправляем точную дату в формате ISO, который требует FastAPI
-        date: new Date().toISOString(),
+        
+        date: new Date(date).toISOString(),
         
        
         
@@ -156,6 +156,7 @@ function Dashboard() {
       setCategoryId("")
       getWallets()
       getReport()
+      setDate(new Date().toISOString().split("T")[0])
       if (currentWalletId) getTransactions(currentWalletId)
     } else {
       showNotification("Ошибка создания транзакции", "error")
@@ -344,7 +345,10 @@ function Dashboard() {
 
       if (response.ok) {
         const data = await response.json()
-        setReportData(data)
+        setReportData({
+          income: Array.isArray(data.income) ? data.income : [],
+          expense: Array.isArray(data.expense) ? data.expense : []
+        })
       }
     } catch (error) {
       console.error("Ошибка при загрузке аналитики:", error)
@@ -428,12 +432,7 @@ function Dashboard() {
     { date: "Wed", Income: 0, Expense: 0 },
   ]
 
-  const pieData = report?.categories_data && report.categories_data.length > 0 
-  ? report.categories_data.map(item => ({
-      name: item.name || "Без названия", 
-      value: Number(item.value) || 0
-    }))
-  : [{ name: "Нет расходов", value: 0 }]
+  
 
   // Фильтрация транзакций "на лету"
   const filteredTransactions = transactions.filter((tx) => {
@@ -451,6 +450,9 @@ function Dashboard() {
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage)
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"]
+
+  const monthlyExpenseData = Array.isArray(reportData?.expense) ? reportData.expense : []
+  const monthlyIncomeData = Array.isArray(reportData?.income) ? reportData.income : []
 
   const getTypeColor = (txType) => {
     if (["income", "loan_taken", "loan_repaid_to_us"].includes(txType)) return "#22c55e"
@@ -529,9 +531,9 @@ function Dashboard() {
 
       {/* CHARTS */}
       <div style={{ display: "flex", gap: "20px", marginBottom: "30px", flexWrap: "wrap" }}>
-        <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px", flex: 2, minWidth: "300px", height: "320px" }}>
+        <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px", flex: 1, minWidth: "300px", height: "320px" }}>
           <h3 style={{ marginBottom: "15px", marginTop: 0, color: "#cbd5e1" }}>Daily Trends ({period === "custom" ? "Кастомно" : period})</h3>
-          <ResponsiveContainer width="100%" height="80%">
+          <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
               <XAxis dataKey="date" stroke="#94a3b8" />
@@ -543,32 +545,19 @@ function Dashboard() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-
-        <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px", flex: 1, minWidth: "280px", height: "320px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <h3 style={{ marginTop: 0, color: "#cbd5e1" }}>Expenses by Category</h3>
-          <ResponsiveContainer width="100%" height="80%">
-            <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value" style={{ outline: "none" }}>
-                {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-              </Pie>
-              <Tooltip contentStyle={{ backgroundColor: "#1e293b", borderColor: "#475569", color: "#fff", borderRadius: "8px" }} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
       </div>
 
       <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginTop: "30px", marginBottom: "30px", justifyContent: "space-around" }}>
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "12px", width: "45%", minWidth: "300px", textAlign: "center" }}>
           <h3 style={{ color: "white", marginBottom: "15px" }}>Аналитика Расходов</h3>
-          {reportData.expense.length === 0 ? (
+          {monthlyExpenseData.length === 0 ? (
             <p style={{ color: "#64748b", padding: "40px 0" }}>Нет данных по расходам за этот месяц</p>
           ) : (
             <div style={{ width: "100%", height: 250 }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie
-                    data={reportData.expense}
+                    data={monthlyExpenseData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -577,7 +566,7 @@ function Dashboard() {
                     dataKey="total_amount"
                     nameKey="category_name"
                   >
-                    {reportData.expense.map((entry, index) => (
+                    {monthlyExpenseData.map((entry, index) => (
                       <Cell key={`expense-cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -591,14 +580,14 @@ function Dashboard() {
 
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "12px", width: "45%", minWidth: "300px", textAlign: "center" }}>
           <h3 style={{ color: "white", marginBottom: "15px" }}>Аналитика Доходов</h3>
-          {reportData.income.length === 0 ? (
+          {monthlyIncomeData.length === 0 ? (
             <p style={{ color: "#64748b", padding: "40px 0" }}>Нет данных по доходам за этот месяц</p>
           ) : (
             <div style={{ width: "100%", height: 250 }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie
-                    data={reportData.income}
+                    data={monthlyIncomeData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -607,7 +596,7 @@ function Dashboard() {
                     dataKey="total_amount"
                     nameKey="category_name"
                   >
-                    {reportData.income.map((entry, index) => (
+                    {monthlyIncomeData.map((entry, index) => (
                       <Cell key={`income-cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -756,7 +745,16 @@ function Dashboard() {
           )}
         </div>
       )}         
-          
+            <div style={{ marginBottom: "15px", width: "95%" }}>
+             <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>Дата операции:</label>
+             <input 
+               type="date" 
+                value={date} 
+                onChange={(e) => setDate(e.target.value)} 
+                max={new Date().toISOString().split('T')[0]} // Ограничиваем, чтобы нельзя было заглянуть в будущее
+                style={{ width: "100%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
+              />
+            </div>       
           <button onClick={createTransaction} style={{ width: "100%", padding: "12px", backgroundColor: "#22c55e", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>Create Transaction</button>
         </div>
       </div>
