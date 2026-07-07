@@ -129,15 +129,32 @@ def create_transaction(
                 detail="Debt not found"
             )
 
-        if transaction.amount > debt.amount:
+        if debt.status == schemas.DebtStatus.closed:
             raise HTTPException(
                 status_code=400,
-                detail="Amount exceeds debt"
+                detail="Этот долг уже закрыт"
             )
 
-        debt.amount -= transaction.amount
+        # debt.amount хранит ИЗНАЧАЛЬНУЮ сумму долга (не трогаем её напрямую).
+        # Остаток считаем из суммы всех предыдущих возвратов по этому долгу.
+        existing_repayments = db.query(models.Transaction).filter(
+            models.Transaction.debt_id == debt.id,
+            models.Transaction.type.in_([
+                models.TransactionType.loan_repaid_by_us,
+                models.TransactionType.loan_repaid_to_us
+            ])
+        ).all()
 
-        if debt.amount == 0:
+        already_paid = sum(t.amount for t in existing_repayments)
+        remaining_before = debt.amount - already_paid
+
+        if transaction.amount > remaining_before:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Сумма платежа больше остатка долга ({remaining_before})"
+            )
+
+        if already_paid + transaction.amount >= debt.amount:
             debt.status = schemas.DebtStatus.closed
 
     # -------- BALANCE --------

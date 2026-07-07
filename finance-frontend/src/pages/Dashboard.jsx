@@ -44,6 +44,7 @@ function Dashboard() {
   const [walletId, setWalletId] = useState("")
   const [categoryId, setCategoryId] = useState("")
   const [personId, setPersonId] = useState("")
+  const [debtId, setDebtId] = useState("")
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   // Категории: имя и тип (расход/доход)
   const [newCategoryName, setNewCategoryName] = useState("")
@@ -134,6 +135,11 @@ function Dashboard() {
       return
     }
 
+    if (["loan_repaid_to_us", "loan_repaid_by_us"].includes(type) && !debtId) {
+      showNotification("Выберите долг, который хотите вернуть!", "error")
+      return
+    }
+
     const response = await fetch(`${BASE_URL}/transactions`, {
       method: "POST",
       headers: {
@@ -153,7 +159,10 @@ function Dashboard() {
         person_id: ["loan_given", "loan_taken", "loan_repaid_to_us", "loan_repaid_by_us"].includes(type)
           ? (personId ? parseInt(personId) : null)
           : null,
-        debt_id: null,
+        // Для возврата долга обязательно передаём debt_id (бэкенд требует это поле)
+        debt_id: ["loan_repaid_to_us", "loan_repaid_by_us"].includes(type)
+          ? (debtId ? parseInt(debtId) : null)
+          : null,
         // Внутри тела запроса при создании транзакции убедись, что передается:
         to_wallet_id: type === "transfer" ? parseInt(toWalletId) : null,
         category_id: type === "transfer" ? null : parseInt(categoryId),
@@ -166,6 +175,7 @@ function Dashboard() {
       setDescription("")
       setCategoryId("")
       setPersonId("")
+      setDebtId("")
       getWallets()
       getReport()
       fetchDebtsData()
@@ -810,6 +820,37 @@ function Dashboard() {
               {people.length === 0 && (
                 <p style={{ color: "#94a3b8", fontSize: "0.8rem", marginTop: "5px" }}>
                   Нет контактов — добавьте их в блоке "Учет долгов" ниже.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Выбор конкретного долга — только для возврата долга */}
+          {["loan_repaid_to_us", "loan_repaid_by_us"].includes(type) && (
+            <div style={{ marginBottom: "15px", width: "95%" }}>
+              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>
+                Какой долг возвращаем:
+              </label>
+              <select
+                value={debtId}
+                onChange={(e) => setDebtId(e.target.value)}
+                style={{ width: "100%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
+              >
+                <option value="">Выберите долг</option>
+                {debts
+                  .filter(d => type === "loan_repaid_to_us" ? d.type === "they_owe" : d.type === "we_owe")
+                  .map(d => {
+                    const personName = people.find(p => p.id == d.person_id)?.name || "Неизвестно"
+                    return (
+                      <option key={d.id} value={d.id}>
+                        {personName} — {d.amount} ₺
+                      </option>
+                    )
+                  })}
+              </select>
+              {debts.filter(d => type === "loan_repaid_to_us" ? d.type === "they_owe" : d.type === "we_owe").length === 0 && (
+                <p style={{ color: "#94a3b8", fontSize: "0.8rem", marginTop: "5px" }}>
+                  Нет активных долгов этого типа для возврата.
                 </p>
               )}
             </div>
