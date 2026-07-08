@@ -12,10 +12,25 @@ SECRET_KEY = "mysecretkey"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto"
-)
+def hash_password(password: str) -> str:
+    # Переводим строку в байты
+    password_bytes = password.encode('utf-8')
+    # Генерируем соль
+    salt = bcrypt.gensalt()
+    # Хешируем
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    # Возвращаем как обычную строку для сохранения в БД
+    return hashed.decode('utf-8')
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        # Переводим обе строки в байты для сравнения
+        plain_bytes = plain_password.encode('utf-8')
+        hashed_bytes = hashed_password.encode('utf-8')
+        # Проверяем совпадение
+        return bcrypt.checkpw(plain_bytes, hashed_bytes)
+    except Exception:
+        return False
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="login"
