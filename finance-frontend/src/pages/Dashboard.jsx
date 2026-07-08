@@ -708,7 +708,14 @@ function Dashboard() {
               debts.filter(d => d.type === "they_owe").map(d => (
                 <div key={d.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px dashed #334155" }}>
                   <span>{people.find(p => p.id == d.person_id)?.name || "Кто-то"}</span>
-                  <span style={{ fontWeight: "bold", color: "#10b981" }}>{d.amount} ₺</span>
+                  <span style={{ fontWeight: "bold", color: "#10b981" }}>
+                    {d.remaining !== undefined ? d.remaining : d.amount} ₺
+                    {d.already_paid > 0 && (
+                      <span style={{ color: "#64748b", fontWeight: "normal", fontSize: "0.75rem", marginLeft: "6px" }}>
+                        (из {d.amount} ₺)
+                      </span>
+                    )}
+                  </span>
                 </div>
               ))
             )}
@@ -723,7 +730,14 @@ function Dashboard() {
               debts.filter(d => d.type === "we_owe").map(d => (
                 <div key={d.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px dashed #334155" }}>
                   <span>{people.find(p => p.id == d.person_id)?.name || "Кредитор"}</span>
-                  <span style={{ fontWeight: "bold", color: "#ef4444" }}>{d.amount} ₺</span>
+                  <span style={{ fontWeight: "bold", color: "#ef4444" }}>
+                    {d.remaining !== undefined ? d.remaining : d.amount} ₺
+                    {d.already_paid > 0 && (
+                      <span style={{ color: "#64748b", fontWeight: "normal", fontSize: "0.75rem", marginLeft: "6px" }}>
+                        (из {d.amount} ₺)
+                      </span>
+                    )}
+                  </span>
                 </div>
               ))
             )}
@@ -841,9 +855,10 @@ function Dashboard() {
                   .filter(d => type === "loan_repaid_to_us" ? d.type === "they_owe" : d.type === "we_owe")
                   .map(d => {
                     const personName = people.find(p => p.id == d.person_id)?.name || "Неизвестно"
+                    const amountToShow = d.remaining !== undefined ? d.remaining : d.amount
                     return (
                       <option key={d.id} value={d.id}>
-                        {personName} — {d.amount} ₺
+                        {personName} — остаток {amountToShow} ₺
                       </option>
                     )
                   })}

@@ -13,10 +13,35 @@ def get_user_debts(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    return db.query(models.Debt)\
+    active_debts = db.query(models.Debt)\
         .join(models.Person, models.Debt.person_id == models.Person.id)\
         .filter(models.Person.user_id == current_user.id, models.Debt.status == "active")\
         .all()
+
+    result = []
+    for debt in active_debts:
+        repayments = db.query(models.Transaction).filter(
+            models.Transaction.debt_id == debt.id,
+            models.Transaction.type.in_([
+                models.TransactionType.loan_repaid_by_us,
+                models.TransactionType.loan_repaid_to_us
+            ])
+        ).all()
+
+        already_paid = sum(t.amount for t in repayments)
+        remaining = debt.amount - already_paid
+
+        result.append({
+            "id": debt.id,
+            "person_id": debt.person_id,
+            "type": debt.type,
+            "status": debt.status,
+            "amount": debt.amount,          # изначальная сумма
+            "already_paid": already_paid,   # сколько уже вернули
+            "remaining": remaining          # остаток к возврату
+        })
+
+    return result
 
 
 # 2. Создать нового человека (контакт для долга)
