@@ -34,11 +34,11 @@ conf = ConnectionConfig(
     MAIL_USERNAME=os.environ.get("SMTP_USERNAME"),
     MAIL_PASSWORD=os.environ.get("SMTP_PASSWORD"),
     MAIL_FROM=os.environ.get("SMTP_FROM"),
-    MAIL_PORT=int(os.environ.get("SMTP_PORT", 587)),
+    MAIL_PORT=int(os.environ.get("SMTP_PORT", 465)),
     MAIL_SERVER=os.environ.get("SMTP_SERVER", "smtp.gmail.com"),
     MAIL_FROM_NAME="Finance App Support",
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
+    MAIL_STARTTLS=False,       
+    MAIL_SSL_TLS=True,
     USE_CREDENTIALS=True,
     VALIDATE_CERTS=True
 )
