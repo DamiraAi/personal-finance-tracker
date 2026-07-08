@@ -1,16 +1,17 @@
-from fastapi import FastAPI, HTTPException, Depends # type: ignore
-from sqlalchemy.orm import Session # type: ignore
-from fastapi.security import OAuth2PasswordRequestForm # type: ignore
-from database import Base, engine
+import os
+import secrets
+from datetime import datetime, timedelta
+from jose import jwt, JWTError  # type: ignore
+
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks  # type: ignore
+from fastapi.security import OAuth2PasswordRequestForm  # type: ignore
+from fastapi.middleware.cors import CORSMiddleware  # type: ignore
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType  # type: ignore
+from sqlalchemy.orm import Session  # type: ignore
+
+from database import Base, engine, create_default_categories
 import models
 import schemas
-from database import create_default_categories
-
-from fastapi import Depends, APIRouter
-
-#models.Base.metadata.drop_all(bind=engine)
-models.Base.metadata.create_all(bind=engine)
-
 from auth import (
     hash_password,
     verify_password,
@@ -20,23 +21,46 @@ from auth import (
     DEFAULT_CATEGORIES  # Импортируем наш профессиональный список категорий
 )
 
-from routers import wallets
-from routers import transactions
-from routers import debts
-from routers import persons
-from routers import categories
-from routers import reports
-from fastapi.middleware.cors import CORSMiddleware # type: ignore
+from routers import wallets, transactions, debts, persons, categories, reports
 
+# Создание таблиц (если их нет)
+models.Base.metadata.create_all(bind=engine)
+
+# Инициализация приложения FastAPI
 app = FastAPI()
 
+# --- КОНФИГУРАЦИЯ SMTP (FASTAPI-MAIL) ---
+conf = ConnectionConfig(
+    MAIL_USERNAME=os.environ.get("SMTP_USERNAME"),
+    MAIL_PASSWORD=os.environ.get("SMTP_PASSWORD"),
+    MAIL_FROM=os.environ.get("SMTP_FROM"),
+    MAIL_PORT=int(os.environ.get("SMTP_PORT", 587)),
+    MAIL_SERVER=os.environ.get("SMTP_SERVER", "smtp.gmail.com"),
+    MAIL_FROM_NAME="Finance App Support",
+    MAIL_STARTTLS=True,
+    MAIL_SSL_TLS=False,
+    USE_CREDENTIALS=True,
+    VALIDATE_CERTS=True
+)
+
+# Настройки безопасности токенов восстановления
+RESET_SECRET_KEY = os.environ.get("SECRET_KEY", "SUPER_SECRET_RECOVERY_KEY_123")
+ALGORITHM = "HS256"
+
+def create_reset_token(email: str):
+    expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode = {"exp": expire, "sub": email}
+    encoded_jwt = jwt.encode(to_encode, RESET_SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+# --- НАСТРОЙКА CORS MIDDLEWARE ---
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://finance-backend-tj8e.onrender.com",
 ]
 
-# Важно: middleware настраивается ПОСЛЕ создания app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?|https://finance-backend-tj8e\.onrender\.com",
@@ -45,6 +69,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# --- КОРНЕВОЙ МАРШРУТ ---
 @app.get("/")
 def root():
     return {
@@ -54,9 +80,8 @@ def root():
     }
 
 
-
 # =====================================================
-# AUTH
+# AUTH & USER MANAGEMENT
 # =====================================================
 
 @app.post("/register")
@@ -83,12 +108,11 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)  # Получаем сгенерированный db_user.id
 
-    # ВЫЗЫВАЕМ ФУНКЦИЮ ИЗ DATABASE.PY:
+    # Вызов инициализации категорий
     try:
-        from database import create_default_categories
         create_default_categories(db, user_id=db_user.id)
     except Exception as e:
-        # Если что-то пойдет не так с категориями, регистрация пользователя все равно завершится успешно
+        # Если что-то пойдет не так с категориями, регистрация завершится успешно
         print(f"Ошибка при создании дефолтных категорий для пользователя {db_user.id}: {e}")
 
     return {
@@ -101,21 +125,11 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-
     db_user = db.query(models.User).filter(
         models.User.email == form_data.username
     ).first()
 
-    if not db_user:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid email or password"
-        )
-
-    if not verify_password(
-        form_data.password,
-        db_user.hashed_password
-    ):
+    if not db_user or not verify_password(form_data.password, db_user.hashed_password):
         raise HTTPException(
             status_code=400,
             detail="Invalid email or password"
@@ -131,7 +145,81 @@ def login(
     }
 
 
-# Подключение роутеров приложения
+# --- ВОССТАНОВЛЕНИЕ ПАРОЛЯ ---
+
+@app.post("/password-recovery/request")
+async def request_password_reset(
+    request: schemas.UserPasswordResetRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    user = db.query(models.User).filter(models.User.email == request.email).first()
+    
+    if not user:
+        # Маскируем ответ ради безопасности данных пользователей
+        return {"message": "Если данный Email зарегистрирован, инструкции по сбросу отправлены на почту."}
+
+    token = create_reset_token(user.email)
+    
+    # В будущем здесь будет ссылка, обрабатываемая вашим Flet-приложением
+    recovery_url = f"https://finance-backend-tj8e.onrender.com/reset-password?token={token}"
+
+    html = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #dddddd; border-radius: 10px;">
+                <h2 style="color: #2196F3; text-align: center;">Восстановление пароля</h2>
+                <p>Привет, <strong>{user.username}</strong>!</p>
+                <p>Мы получили запрос на сброс пароля для твоего аккаунта в Финансовом приложении.</p>
+                <p>Чтобы установить новый пароль, нажмите на кнопку ниже. Ссылка действительна в течение 15 минут:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{recovery_url}" style="background-color: #2196F3; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Сбросить пароль</a>
+                </div>
+                <p style="font-size: 12px; color: #777;">Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо.</p>
+            </div>
+        </body>
+    </html>
+    """
+
+    message = MessageSchema(
+        subject="Восстановление пароля — Финансовое приложение",
+        recipients=[user.email],
+        body=html,
+        subtype=MessageType.html
+    )
+
+    fm = FastMail(conf)
+    background_tasks.add_task(fm.send_message, message)
+
+    return {"message": "Инструкции по восстановлению пароля отправлены на ваш Email."}
+
+
+@app.post("/password-recovery/reset")
+def reset_password(
+    data: schemas.UserPasswordResetConfirm,
+    db: Session = Depends(get_db)
+):
+    try:
+        payload = jwt.decode(data.token, RESET_SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=400, detail="Неверный или просроченный токен")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Неверный или просроченный токен")
+
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=444, detail="Пользователь не найден")
+
+    user.hashed_password = hash_password(data.new_password)
+    db.commit()
+
+    return {"status": "success", "message": "Пароль успешно обновлен! Теперь вы можете войти в приложение."}
+
+
+# =====================================================
+# ПОДКЛЮЧЕНИЕ РОУТЕРОВ ПРИЛОЖЕНИЯ
+# =====================================================
 app.include_router(wallets.router)
 app.include_router(transactions.router)
 app.include_router(debts.router)

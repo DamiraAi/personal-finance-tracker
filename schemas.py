@@ -3,6 +3,7 @@ from enum import Enum
 from datetime import datetime
 from pydantic import BaseModel, model_validator 
 from typing import Optional, List
+from pydantic import BaseModel, EmailStr
 
 # -------- USER --------
 
@@ -120,3 +121,11 @@ class MonthlyReportResponse(BaseModel):
     income: List[CategoryReportItem]
     expense: List[CategoryReportItem]   
     date: datetime| None = None
+
+class UserPasswordResetRequest(BaseModel):
+    email: EmailStr
+
+# Схема для установки нового пароля (когда пользователь пришел по ссылке с токеном)
+class UserPasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
