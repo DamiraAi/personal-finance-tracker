@@ -684,7 +684,7 @@ function Dashboard() {
         <form onSubmit={handleCreatePerson} style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
           <input
             type="text"
-            placeholder="Имя контакта (например, Алина)"
+            placeholder="Contact name (e.g. Alina)"
             value={newPersonName}
             onChange={(e) => setNewPersonName(e.target.value)}
             style={{ flex: 1, padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}

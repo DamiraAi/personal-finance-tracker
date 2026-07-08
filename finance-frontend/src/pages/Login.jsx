@@ -108,7 +108,7 @@ function Login() {
             <label style={{ display: "block", marginBottom: "5px", color: "#94a3b8", fontSize: "14px" }}>Имя пользователя (Username)</label>
             <input 
               type="text" 
-              placeholder="Damira" 
+              placeholder="" 
               value={username} 
               onChange={(e) => setUsername(e.target.value)} 
               style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #475569", backgroundColor: "#334155", color: "white", boxSizing: "border-box", fontSize: "15px" }} 
