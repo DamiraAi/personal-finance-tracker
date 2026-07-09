@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime, timedelta
 from jose import jwt, JWTError  # type: ignore
 
-import resend  
+import resend  # type: ignore
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks  # type: ignore
 from fastapi.security import OAuth2PasswordRequestForm  # type: ignore
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore
@@ -43,9 +43,12 @@ RESET_SECRET_KEY = os.environ.get("SECRET_KEY", "SUPER_SECRET_RECOVERY_KEY_123")
 ALGORITHM = "HS256"
 
 
-def create_reset_token(email: str):
+def create_reset_token(email: str, password_hash: str):
     expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode = {"exp": expire, "sub": email}
+    # Зашиваем текущий хэш пароля в токен. Как только пароль поменяется
+    # (в том числе через этот же токен), старый токен перестанет совпадать
+    # с новым хэшем и автоматически станет недействительным — без БД.
+    to_encode = {"exp": expire, "sub": email, "pwd_snapshot": password_hash}
     encoded_jwt = jwt.encode(to_encode, RESET_SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -155,9 +158,9 @@ async def request_password_reset(
         # Маскируем ответ ради безопасности данных пользователей
         return {"message": "Если данный Email зарегистрирован, инструкции по сбросу отправлены на почту."}
 
-    token = create_reset_token(user.email)
+    token = create_reset_token(user.email, user.hashed_password)
 
-    # В будущем здесь будет ссылка, обрабатываемая вашим Flet-приложением
+    # Ссылка ведёт на страницу сброса пароля во фронтенд-приложении
     recovery_url = f"http://localhost:5173/reset-password?token={token}"
 
     html_content = f"""
@@ -202,7 +205,8 @@ def reset_password(
     try:
         payload = jwt.decode(data.token, RESET_SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
-        if email is None:
+        pwd_snapshot: str = payload.get("pwd_snapshot")
+        if email is None or pwd_snapshot is None:
             raise HTTPException(status_code=400, detail="Неверный или просроченный токен")
     except JWTError:
         raise HTTPException(status_code=400, detail="Неверный или просроченный токен")
@@ -210,6 +214,15 @@ def reset_password(
     user = db.query(models.User).filter(models.User.email == email).first()
     if not user:
         raise HTTPException(status_code=444, detail="Пользователь не найден")
+
+    # Если хэш пароля уже отличается от того, что был на момент выдачи токена —
+    # значит, пароль уже меняли (этой же или другой ссылкой). Токен считаем
+    # использованным и отклоняем повторную попытку.
+    if user.hashed_password != pwd_snapshot:
+        raise HTTPException(
+            status_code=400,
+            detail="Эта ссылка уже была использована. Запросите новую ссылку для сброса пароля."
+        )
 
     user.hashed_password = hash_password(data.new_password)
     db.commit()
