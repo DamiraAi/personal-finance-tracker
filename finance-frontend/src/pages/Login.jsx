@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 
 function Login() {
   // isLogin = true (показываем форму Входа), isLogin = false (показываем форму Регистрации)
   const [isLogin, setIsLogin] = useState(true)
-  
+
   // Общие стейты
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   // Стейт для имени пользователя (нужен только при регистрации)
   const [username, setUsername] = useState("")
-  
+
   const navigate = useNavigate()
 
   // Если токен уже есть, сразу уводим на дашборд
@@ -96,51 +96,60 @@ function Login() {
   return (
     <div style={{ backgroundColor: "#0f172a", minHeight: "100vh", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Arial, sans-serif" }}>
       <div style={{ backgroundColor: "#1e293b", padding: "40px", borderRadius: "15px", maxWidth: "450px", width: "100%", margin: "20px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3)" }}>
-        
+
         {/* Меняем заголовок в зависимости от режима */}
         <h2 style={{ textAlign: "center", marginBottom: "25px", fontSize: "24px", fontWeight: "600" }}>
           {isLogin ? "Finance Login" : "Finance Registration"}
         </h2>
-        
+
         {/* Поле Username показывается ТОЛЬКО при Регистрации */}
         {!isLogin && (
           <div style={{ marginBottom: "15px" }}>
             <label style={{ display: "block", marginBottom: "5px", color: "#94a3b8", fontSize: "14px" }}>Имя пользователя (Username)</label>
-            <input 
-              type="text" 
-              placeholder="" 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)} 
-              style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #475569", backgroundColor: "#334155", color: "white", boxSizing: "border-box", fontSize: "15px" }} 
+            <input
+              type="text"
+              placeholder=""
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #475569", backgroundColor: "#334155", color: "white", boxSizing: "border-box", fontSize: "15px" }}
             />
           </div>
         )}
 
         <div style={{ marginBottom: "15px" }}>
           <label style={{ display: "block", marginBottom: "5px", color: "#94a3b8", fontSize: "14px" }}>Email</label>
-          <input 
-            type="email" 
-            placeholder="example@mail.com" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
-            style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #475569", backgroundColor: "#334155", color: "white", boxSizing: "border-box", fontSize: "15px" }} 
+          <input
+            type="email"
+            placeholder="example@mail.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #475569", backgroundColor: "#334155", color: "white", boxSizing: "border-box", fontSize: "15px" }}
           />
         </div>
 
-        <div style={{ marginBottom: "25px" }}>
+        <div style={{ marginBottom: "10px" }}>
           <label style={{ display: "block", marginBottom: "5px", color: "#94a3b8", fontSize: "14px" }}>Пароль</label>
-          <input 
-            type="password" 
-            placeholder="••••••••" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-            style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #475569", backgroundColor: "#334155", color: "white", boxSizing: "border-box", fontSize: "15px" }} 
+          <input
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #475569", backgroundColor: "#334155", color: "white", boxSizing: "border-box", fontSize: "15px" }}
           />
         </div>
+
+        {/* Ссылка "Забыли пароль?" — показываем только в режиме входа */}
+        {isLogin && (
+          <div style={{ textAlign: "right", marginBottom: "20px" }}>
+            <Link to="/forgot-password" style={{ color: "#60a5fa", fontSize: "13px", textDecoration: "underline" }}>
+              Забыли пароль?
+            </Link>
+          </div>
+        )}
 
         {/* Главная кнопка меняет действие и текст */}
-        <button 
-          onClick={isLogin ? handleLogin : handleRegister} 
+        <button
+          onClick={isLogin ? handleLogin : handleRegister}
           style={{ width: "100%", padding: "14px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", fontSize: "16px", transition: "background-color 0.2s" }}
         >
           {isLogin ? "Войти в систему" : "Зарегистрироваться"}
@@ -148,8 +157,8 @@ function Login() {
 
         {/* Переключатель режимов */}
         <div style={{ marginTop: "20px", textAlign: "center" }}>
-          <span 
-            onClick={toggleAuthMode} 
+          <span
+            onClick={toggleAuthMode}
             style={{ color: "#60a5fa", cursor: "pointer", fontSize: "14px", textDecoration: "underline" }}
           >
             {isLogin ? "Ещё нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}

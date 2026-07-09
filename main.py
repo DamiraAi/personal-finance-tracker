@@ -158,7 +158,7 @@ async def request_password_reset(
     token = create_reset_token(user.email)
 
     # В будущем здесь будет ссылка, обрабатываемая вашим Flet-приложением
-    recovery_url = f"https://finance-backend-tj8e.onrender.com/reset-password?token={token}"
+    recovery_url = f"http://localhost:5173/reset-password?token={token}"
 
     html_content = f"""
     <html>
