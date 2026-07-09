@@ -3,10 +3,10 @@ import secrets
 from datetime import datetime, timedelta
 from jose import jwt, JWTError  # type: ignore
 
+import resend  
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks  # type: ignore
 from fastapi.security import OAuth2PasswordRequestForm  # type: ignore
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore
-from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType  # type: ignore
 from sqlalchemy.orm import Session  # type: ignore
 
 from database import Base, engine, create_default_categories
@@ -29,23 +29,19 @@ models.Base.metadata.create_all(bind=engine)
 # Инициализация приложения FastAPI
 app = FastAPI()
 
-# --- КОНФИГУРАЦИЯ SMTP (FASTAPI-MAIL) ---
-conf = ConnectionConfig(
-    MAIL_USERNAME=os.environ.get("SMTP_USERNAME"),
-    MAIL_PASSWORD=os.environ.get("SMTP_PASSWORD"),
-    MAIL_FROM=os.environ.get("SMTP_FROM"),
-    MAIL_PORT=int(os.environ.get("SMTP_PORT", 465)),
-    MAIL_SERVER=os.environ.get("SMTP_SERVER", "smtp.gmail.com"),
-    MAIL_FROM_NAME="Finance App Support",
-    MAIL_STARTTLS=False,       
-    MAIL_SSL_TLS=True,
-    USE_CREDENTIALS=True,
-    VALIDATE_CERTS=True
-)
+# --- КОНФИГУРАЦИЯ RESEND (вместо SMTP/fastapi-mail) ---
+resend.api_key = os.environ.get("RESEND_API_KEY")
+
+# Адрес отправителя. Пока домен не верифицирован в Resend, работает только
+# onboarding@resend.dev, и письма уходят лишь на email, привязанный к вашему
+# аккаунту Resend. После верификации своего домена замените на
+# "Finance App <noreply@ваш-домен.com>".
+MAIL_FROM = os.environ.get("MAIL_FROM", "Finance App <onboarding@resend.dev>")
 
 # Настройки безопасности токенов восстановления
 RESET_SECRET_KEY = os.environ.get("SECRET_KEY", "SUPER_SECRET_RECOVERY_KEY_123")
 ALGORITHM = "HS256"
+
 
 def create_reset_token(email: str):
     expire = datetime.utcnow() + timedelta(minutes=15)
@@ -154,17 +150,17 @@ async def request_password_reset(
     db: Session = Depends(get_db)
 ):
     user = db.query(models.User).filter(models.User.email == request.email).first()
-    
+
     if not user:
         # Маскируем ответ ради безопасности данных пользователей
         return {"message": "Если данный Email зарегистрирован, инструкции по сбросу отправлены на почту."}
 
     token = create_reset_token(user.email)
-    
+
     # В будущем здесь будет ссылка, обрабатываемая вашим Flet-приложением
     recovery_url = f"https://finance-backend-tj8e.onrender.com/reset-password?token={token}"
 
-    html = f"""
+    html_content = f"""
     <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #dddddd; border-radius: 10px;">
@@ -181,15 +177,19 @@ async def request_password_reset(
     </html>
     """
 
-    message = MessageSchema(
-        subject="Восстановление пароля — Финансовое приложение",
-        recipients=[user.email],
-        body=html,
-        subtype=MessageType.html
-    )
+    def send_email_via_resend():
+        try:
+            resend.Emails.send({
+                "from": MAIL_FROM,
+                "to": [user.email],
+                "subject": "Восстановление пароля — Финансовое приложение",
+                "html": html_content,
+            })
+        except Exception as e:
+            print(f"Ошибка отправки через Resend: {e}")
 
-    fm = FastMail(conf)
-    background_tasks.add_task(fm.send_message, message)
+    # Запускаем отправку в фоне, чтобы сеть не тормозила ответ пользователю
+    background_tasks.add_task(send_email_via_resend)
 
     return {"message": "Инструкции по восстановлению пароля отправлены на ваш Email."}
 
