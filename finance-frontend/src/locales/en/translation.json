@@ -26,5 +26,29 @@
   "alert_fill_fields": "Please select a category and specify a limit",
   "alert_save_error": "Failed to save budget",
   "alert_delete_error": "Failed to delete budget",
-  "alert_connection_error": "Server connection error"
+  "alert_connection_error": "Server connection error",
+  "categories": {
+    "food": "Groceries & Supermarkets",
+    "cafe": "Cafes & Restaurants",
+    "transport": "Transport & Taxi",
+    "car": "Car & Fuel",
+    "housing": "Housing & Utilities",
+    "health": "Health & Pharmacy",
+    "clothing": "Clothes & Shoes",
+    "beauty": "Beauty & Care",
+    "entertainment": "Entertainment & Leisure",
+    "education": "Education & Books",
+    "telecom": "Network & Internet",
+    "subscriptions": "Subscriptions & Services",
+    "gifts_expense": "Gifts & Charity",
+    "other_expense": "Other Expenses",
+    "salary": "Salary",
+    "advance": "Advance Payment",
+    "freelance": "Freelance & Side Hustle",
+    "business_investment": "Business / Investments",
+    "gifts_income": "Gifts / Rewards",
+    "cashback": "Cashback & Bonuses",
+    "other_income": "Other Income"
+  }
+  
 }

@@ -26,5 +26,28 @@
   "alert_fill_fields": "Lütfen kategori seçin ve limit belirtin",
   "alert_save_error": "Bütçe kaydedilemedi",
   "alert_delete_error": "Bütçe silinemedi",
-  "alert_connection_error": "Sunucu bağlantı hatası"
+  "alert_connection_error": "Sunucu bağlantı hatası",
+  "categories": {
+    "food": "Market & Süpermarket",
+    "cafe": "Kafe & Restoran",
+    "transport": "Ulaşım & Taksi",
+    "car": "Araba & Yakıt",
+    "housing": "Ev & Faturalar",
+    "health": "Sağlık & Eczane",
+    "clothing": "Giyim & Ayakkabı",
+    "beauty": "Güzellik & Bakım",
+    "entertainment": "Eğlence & Aktivite",
+    "education": "Eğitim & Kitaplar",
+    "telecom": "İletişim & İnternet",
+    "subscriptions": "Abonelikler & Servisler",
+    "gifts_expense": "Hediyeler & Bağışlar",
+    "other_expense": "Diğer Giderler",
+    "salary": "Maaş",
+    "advance": "Avans",
+    "freelance": "Serbest Çalışma (Freelance)",
+    "business_investment": "İş / Yatırım",
+    "gifts_income": "Hediyeler / Ödüller",
+    "cashback": "Nakit İade & Bonuslar",
+    "other_income": "Diğer Gelirler"
+  }
 }

@@ -2,14 +2,29 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
+// Импортируем словари для Login / Общих страниц
 import translationRU from './locales/ru/translation.json';
 import translationTR from './locales/tr/translation.json';
 import translationEN from './locales/en/translation.json';
 
+// Импортируем словари для Dashboard
+import dashboardRU from './locales/ru/dashboard.json';
+import dashboardTR from './locales/tr/dashboard.json';
+import dashboardEN from './locales/en/dashboard.json';
+
 const resources = {
-  ru: { translation: translationRU },
-  tr: { translation: translationTR },
-  en: { translation: translationEN }
+  ru: { 
+    translation: translationRU,
+    dashboard: dashboardRU 
+  },
+  tr: { 
+    translation: translationTR,
+    dashboard: dashboardTR 
+  },
+  en: { 
+    translation: translationEN,
+    dashboard: dashboardEN 
+  }
 };
 
 i18n
@@ -18,6 +33,8 @@ i18n
   .init({
     resources,
     fallbackLng: 'ru', // Если язык пользователя не найден, включаем русский
+    ns: ['translation', 'dashboard'], // Регистрируем оба пространства имен
+    defaultNS: 'translation', // По умолчанию (например, для логина) используется translation
     interpolation: {
       escapeValue: false // React сам защищает от XSS
     }

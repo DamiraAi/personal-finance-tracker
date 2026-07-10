@@ -1,29 +1,3 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-engine = create_engine(DATABASE_URL)
-
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
-
-Base = declarative_base()
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 def create_default_categories(db, user_id: int):
     # ЛОКАЛЬНЫЙ ИМПОРТ: перенесли внутрь функции, чтобы избежать циклической зависимости
     from models import Category 
@@ -33,29 +7,29 @@ def create_default_categories(db, user_id: int):
     if not exists:
         default_cats = [
             # === РАСХОДЫ (Expense) ===
-            {"name": "Продукты & Супермаркеты", "type": "expense"},
-            {"name": "Кафе & Рестораны", "type": "expense"},
-            {"name": "Транспорт & Такси", "type": "expense"},
-            {"name": "Автомобиль & Топливо", "type": "expense"},
-            {"name": "Жилье & Коммунальные услуги", "type": "expense"},
-            {"name": "Здоровье & Аптеки", "type": "expense"},
-            {"name": "Одежда & Обувь", "type": "expense"},
-            {"name": "Красота & Уход", "type": "expense"},
-            {"name": "Развлечения & Досуг", "type": "expense"},
-            {"name": "Образование & Книги", "type": "expense"},
-            {"name": "Связь & Интернет", "type": "expense"},
-            {"name": "Подписки & Сервисы", "type": "expense"},
-            {"name": "Подарки & Благотворительность", "type": "expense"},
-            {"name": "Прочие расходы", "type": "expense"},
+            {"name": "categories.food", "type": "expense"},
+            {"name": "categories.cafe", "type": "expense"},
+            {"name": "categories.transport", "type": "expense"},
+            {"name": "categories.car", "type": "expense"},
+            {"name": "categories.housing", "type": "expense"},
+            {"name": "categories.health", "type": "expense"},
+            {"name": "categories.clothing", "type": "expense"},
+            {"name": "categories.beauty", "type": "expense"},
+            {"name": "categories.entertainment", "type": "expense"},
+            {"name": "categories.education", "type": "expense"},
+            {"name": "categories.telecom", "type": "expense"},
+            {"name": "categories.subscriptions", "type": "expense"},
+            {"name": "categories.gifts_expense", "type": "expense"},
+            {"name": "categories.other_expense", "type": "expense"},
             
             # === ДОХОДЫ (Income) ===
-            {"name": "Зарплата", "type": "income"},
-            {"name": "Аванс", "type": "income"},
-            {"name": "Фриланс & Подработка", "type": "income"},
-            {"name": "Бизнес / Инвестиции", "type": "income"},
-            {"name": "Подарки / Награды", "type": "income"},
-            {"name": "Кэшбэк & Бонусы", "type": "income"},
-            {"name": "Прочие доходы", "type": "income"}
+            {"name": "categories.salary", "type": "income"},
+            {"name": "categories.advance", "type": "income"},
+            {"name": "categories.freelance", "type": "income"},
+            {"name": "categories.business_investment", "type": "income"},
+            {"name": "categories.gifts_income", "type": "income"},
+            {"name": "categories.cashback", "type": "income"},
+            {"name": "categories.other_income", "type": "income"}
         ]
         
         for cat_data in default_cats:
