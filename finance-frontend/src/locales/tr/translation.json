@@ -9,5 +9,22 @@
   "recovery_desc": "E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.",
   "send_link_btn": "Bağlantı Gönder",
   "back_to_login": "Giriş Ekranına Dön",
-  "loading": "Yükleniyor..."
+  "loading": "Yükleniyor...",
+  "no_account": "Henüz hesabınız yok mu?",
+  "register_link": "Kayıt Ol",
+  "budgets_title": "Bütçeler ve Analizler",
+  "daily_allowance_label": "Bugün harcanabilir (Ay sonuna {{days}} gün kaldı)",
+  "per_day": "₺ / gün",
+  "select_category": "Kategori seçiniz",
+  "limit_placeholder": "Aylık limit",
+  "set_budget_btn": "Bütçe Tanımla",
+  "saving": "Kaydediliyor...",
+  "no_budgets": "Henüz bütçe tanımlanmadı",
+  "delete_btn": "Sil",
+  "used_percent": "%{{percent}} kullanıldı",
+  "insights_subtitle": "Analizler",
+  "alert_fill_fields": "Lütfen kategori seçin ve limit belirtin",
+  "alert_save_error": "Bütçe kaydedilemedi",
+  "alert_delete_error": "Bütçe silinemedi",
+  "alert_connection_error": "Sunucu bağlantı hatası"
 }

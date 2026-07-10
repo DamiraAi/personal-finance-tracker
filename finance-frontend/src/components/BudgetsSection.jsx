@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useTranslation } from "react-i18next" // <-- Импортируем хук
 
 const API_BASE = "https://finance-backend-tj8e.onrender.com"
 
@@ -11,6 +12,8 @@ function authHeaders() {
 }
 
 function BudgetsSection() {
+  const { t } = useTranslation() // <-- Активируем функцию t()
+  
   const [categories, setCategories] = useState([])
   const [budgets, setBudgets] = useState([])
   const [insights, setInsights] = useState(null)
@@ -31,7 +34,6 @@ function BudgetsSection() {
       const budgetsData = await budgetsRes.json()
       const insightsData = await insightsRes.json()
 
-      // Оставляем только категории расходов — бюджет для доходов не имеет смысла
       setCategories(Array.isArray(catsData) ? catsData.filter(c => c.type === "expense") : [])
       setBudgets(Array.isArray(budgetsData) ? budgetsData : [])
       setInsights(insightsData)
@@ -46,7 +48,7 @@ function BudgetsSection() {
 
   const handleCreateBudget = async () => {
     if (!selectedCategory || !limitAmount) {
-      alert("Выберите категорию и укажите лимит")
+      alert(t("alert_fill_fields")) // Перевод alert
       return
     }
 
@@ -68,11 +70,11 @@ function BudgetsSection() {
         setSelectedCategory("")
         await loadAll()
       } else {
-        alert(data.detail || "Не удалось сохранить бюджет")
+        alert(data.detail || t("alert_save_error"))
       }
     } catch (error) {
       console.error("Ошибка создания бюджета:", error)
-      alert("Ошибка подключения к серверу")
+      alert(t("alert_connection_error"))
     } finally {
       setLoading(false)
     }
@@ -89,7 +91,7 @@ function BudgetsSection() {
         await loadAll()
       } else {
         const data = await response.json()
-        alert(data.detail || "Не удалось удалить бюджет")
+        alert(data.detail || t("alert_delete_error"))
       }
     } catch (error) {
       console.error("Ошибка удаления бюджета:", error)
@@ -104,15 +106,16 @@ function BudgetsSection() {
 
   return (
     <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px", marginBottom: "20px" }}>
-      <h2 style={{ fontSize: "1.3rem", marginBottom: "20px" }}>Бюджеты и инсайты</h2>
+      <h2 style={{ fontSize: "1.3rem", marginBottom: "20px" }}>{t("budgets_title")}</h2>
 
       {/* --- Дневной лимит --- */}
       {insights && (
         <div style={{ backgroundColor: "#334155", padding: "16px", borderRadius: "10px", marginBottom: "20px" }}>
           {insights.daily_allowance !== null ? (
             <>
+              {/* Передаем переменную живых дней в JSON-перевод */}
               <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 4px 0" }}>
-                Можно потратить сегодня (осталось {insights.days_remaining} дн. в месяце)
+                {t("daily_allowance_label", { days: insights.days_remaining })} 
               </p>
               <p style={{
                 fontSize: "1.6rem",
@@ -120,7 +123,7 @@ function BudgetsSection() {
                 margin: 0,
                 color: insights.daily_allowance < 0 ? "#ef4444" : "#3b82f6"
               }}>
-                {insights.daily_allowance.toFixed(0)} ₺ / день
+                {insights.daily_allowance.toFixed(0)} {t("per_day")}
               </p>
             </>
           ) : (
@@ -138,7 +141,7 @@ function BudgetsSection() {
           onChange={(e) => setSelectedCategory(e.target.value)}
           style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
         >
-          <option value="">Выберите категорию</option>
+          <option value="">{t("select_category")}</option>
           {categories.map(c => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
@@ -146,7 +149,7 @@ function BudgetsSection() {
 
         <input
           type="number"
-          placeholder="Лимит в месяц"
+          placeholder={t("limit_placeholder")}
           value={limitAmount}
           onChange={(e) => setLimitAmount(e.target.value)}
           style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", width: "150px" }}
@@ -157,13 +160,13 @@ function BudgetsSection() {
           disabled={loading}
           style={{ padding: "10px 20px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}
         >
-          {loading ? "Сохранение..." : "Задать бюджет"}
+          {loading ? t("saving") : t("set_budget_btn")}
         </button>
       </div>
 
       {/* --- Список бюджетов с прогресс-барами --- */}
       {budgets.length === 0 ? (
-        <p style={{ color: "#94a3b8", fontSize: "14px" }}>Бюджеты ещё не заданы</p>
+        <p style={{ color: "#94a3b8", fontSize: "14px" }}>{t("no_budgets")}</p>
       ) : (
         budgets.map(b => (
           <div key={b.id} style={{ backgroundColor: "#334155", padding: "14px", borderRadius: "10px", marginBottom: "12px" }}>
@@ -177,7 +180,7 @@ function BudgetsSection() {
                   onClick={() => handleDeleteBudget(b.id)}
                   style={{ padding: "4px 10px", backgroundColor: "#ef4444", color: "white", border: "none", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}
                 >
-                  Удалить
+                  {t("delete_btn")}
                 </button>
               </div>
             </div>
@@ -192,8 +195,9 @@ function BudgetsSection() {
                 }}
               />
             </div>
+            {/* Передаем процент использования прогресс-бара */}
             <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#94a3b8" }}>
-              {b.percent_used.toFixed(0)}% использовано
+              {t("used_percent", { percent: b.percent_used.toFixed(0) })}
             </p>
           </div>
         ))
@@ -202,7 +206,7 @@ function BudgetsSection() {
       {/* --- Текстовые инсайты --- */}
       {insights && insights.insights && insights.insights.length > 0 && (
         <div style={{ marginTop: "20px" }}>
-          <h3 style={{ fontSize: "1rem", marginBottom: "10px", color: "#e2e8f0" }}>Инсайты</h3>
+          <h3 style={{ fontSize: "1rem", marginBottom: "10px", color: "#e2e8f0" }}>{t("insights_subtitle")}</h3>
           {insights.insights.map((text, idx) => (
             <div
               key={idx}

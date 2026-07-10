@@ -9,5 +9,22 @@
   "recovery_desc": "Введите ваш Email, и мы отправим вам ссылку для сброса пароля.",
   "send_link_btn": "Отправить ссылку",
   "back_to_login": "Вернуться к входу",
-  "loading": "Загрузка..."
+  "loading": "Загрузка...",
+  "no_account": "Ещё нет аккаунта?",
+  "register_link": "Зарегистрироваться",
+  "budgets_title": "Бюджеты и инсайты",
+  "daily_allowance_label": "Можно потратить сегодня (осталось {{days}} дн. в месяце)",
+  "per_day": "₺ / день",
+  "select_category": "Выберите категорию",
+  "limit_placeholder": "Лимит в месяц",
+  "set_budget_btn": "Задать бюджет",
+  "saving": "Сохранение...",
+  "no_budgets": "Бюджеты ещё не заданы",
+  "delete_btn": "Удалить",
+  "used_percent": "{{percent}}% использовано",
+  "insights_subtitle": "Инсайты",
+  "alert_fill_fields": "Выберите категорию и укажите лимит",
+  "alert_save_error": "Не удалось сохранить бюджет",
+  "alert_delete_error": "Не удалось удалить бюджет",
+  "alert_connection_error": "Ошибка подключения к серверу"
 }
