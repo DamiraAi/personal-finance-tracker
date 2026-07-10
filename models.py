@@ -44,6 +44,18 @@ class Category(Base):
     transactions = relationship("Transaction", back_populates="category")
 
 
+class Budget(Base):
+    __tablename__ = "budgets"
+ 
+    id = Column(Integer, primary_key=True, index=True)
+    category_id = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    monthly_limit = Column(Float, nullable=False)
+ 
+    # Связи
+    category = relationship("Category")
+    user = relationship("User", back_populates="budgets")
+
 class Person(Base):
     __tablename__ = "persons"
     id = Column(Integer, primary_key=True, index=True)
@@ -119,3 +131,4 @@ class User(Base):
     wallets = relationship("Wallet", back_populates="user", cascade="all, delete-orphan")
     categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
+    budgets = relationship("Budget", cascade="all, delete-orphan")

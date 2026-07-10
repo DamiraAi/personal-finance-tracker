@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from typing import Optional
+import calendar
+from models import Budget, CategoryType
 
 from database import get_db
 from models import Transaction, Category, User, TransactionType
@@ -192,3 +194,162 @@ def get_report(
         "income": income_list,      
         "expense": expense_list 
     }
+
+
+@router.get("/insights")
+def get_insights(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    now = datetime.utcnow()
+ 
+    # --- Границы текущего и прошлого месяца ---
+    current_start = datetime(now.year, now.month, 1)
+    days_in_month = calendar.monthrange(now.year, now.month)[1]
+    current_end = datetime(now.year, now.month, days_in_month, 23, 59, 59)
+    days_elapsed = (now.date() - current_start.date()).days + 1
+    days_remaining = max(days_in_month - days_elapsed + 1, 1)
+ 
+    if now.month == 1:
+        prev_year, prev_month = now.year - 1, 12
+    else:
+        prev_year, prev_month = now.year, now.month - 1
+    prev_start = datetime(prev_year, prev_month, 1)
+    prev_days = calendar.monthrange(prev_year, prev_month)[1]
+    prev_end = datetime(prev_year, prev_month, prev_days, 23, 59, 59)
+ 
+    outgoing_types = [
+        TransactionType.expense,
+        TransactionType.loan_given,
+        TransactionType.loan_repaid_by_us,
+    ]
+    incoming_types = [
+        TransactionType.income,
+        TransactionType.loan_taken,
+        TransactionType.loan_repaid_to_us,
+    ]
+ 
+    # --- Общие суммы за текущий и прошлый месяц ---
+    expense_this_month = db.query(func.sum(Transaction.amount)).filter(
+        Transaction.user_id == current_user.id,
+        Transaction.type.in_(outgoing_types),
+        Transaction.date >= current_start,
+        Transaction.date <= current_end,
+    ).scalar() or 0.0
+    expense_this_month = float(expense_this_month)
+ 
+    income_this_month = db.query(func.sum(Transaction.amount)).filter(
+        Transaction.user_id == current_user.id,
+        Transaction.type.in_(incoming_types),
+        Transaction.date >= current_start,
+        Transaction.date <= current_end,
+    ).scalar() or 0.0
+    income_this_month = float(income_this_month)
+ 
+    expense_last_month = db.query(func.sum(Transaction.amount)).filter(
+        Transaction.user_id == current_user.id,
+        Transaction.type.in_(outgoing_types),
+        Transaction.date >= prev_start,
+        Transaction.date <= prev_end,
+    ).scalar() or 0.0
+    expense_last_month = float(expense_last_month)
+ 
+    # --- Расходы по категориям в этом и прошлом месяце (для сравнения) ---
+    this_month_by_cat = dict(
+        db.query(Category.name, func.sum(Transaction.amount))
+        .select_from(Transaction)
+        .join(Category, Transaction.category_id == Category.id)
+        .filter(
+            Transaction.user_id == current_user.id,
+            Transaction.type.in_(outgoing_types),
+            Transaction.date >= current_start,
+            Transaction.date <= current_end,
+        )
+        .group_by(Category.name)
+        .all()
+    )
+    last_month_by_cat = dict(
+        db.query(Category.name, func.sum(Transaction.amount))
+        .select_from(Transaction)
+        .join(Category, Transaction.category_id == Category.id)
+        .filter(
+            Transaction.user_id == current_user.id,
+            Transaction.type.in_(outgoing_types),
+            Transaction.date >= prev_start,
+            Transaction.date <= prev_end,
+        )
+        .group_by(Category.name)
+        .all()
+    )
+ 
+    # --- Бюджеты пользователя ---
+    budgets = db.query(Budget).filter(Budget.user_id == current_user.id).all()
+    total_budget = sum(b.monthly_limit for b in budgets)
+ 
+    # --- Прогноз "сколько можно тратить в день" ---
+    daily_allowance = None
+    daily_allowance_note = None
+ 
+    if total_budget > 0:
+        remaining_budget = total_budget - expense_this_month
+        daily_allowance = round(remaining_budget / days_remaining, 2)
+        if daily_allowance < 0:
+            daily_allowance_note = "Бюджет уже превышен в этом месяце"
+    else:
+        daily_allowance_note = "Задайте хотя бы один бюджет по категории, чтобы увидеть дневной лимит"
+ 
+    # --- Генерация текстовых инсайтов на основе правил ---
+    insights = []
+ 
+    # 1. Превышение бюджета по категориям
+    for b in budgets:
+        cat = db.query(Category).filter(Category.id == b.category_id).first()
+        if not cat:
+            continue
+        spent = float(this_month_by_cat.get(cat.name, 0.0))
+        if b.monthly_limit > 0:
+            pct = (spent / b.monthly_limit) * 100
+            if pct >= 100:
+                insights.append(
+                    f"⚠️ Бюджет по категории «{cat.name}» превышен: потрачено {spent:.0f} из {b.monthly_limit:.0f}"
+                )
+            elif pct >= 80:
+                insights.append(
+                    f"Вы использовали {pct:.0f}% бюджета по категории «{cat.name}»"
+                )
+ 
+    # 2. Рост расходов по категориям по сравнению с прошлым месяцем
+    for cat_name, amount in this_month_by_cat.items():
+        prev_amount = last_month_by_cat.get(cat_name, 0.0)
+        amount = float(amount)
+        if prev_amount and prev_amount > 0:
+            change_pct = ((amount - prev_amount) / prev_amount) * 100
+            if change_pct >= 20:
+                insights.append(
+                    f"Траты на «{cat_name}» выросли на {change_pct:.0f}% по сравнению с прошлым месяцем"
+                )
+ 
+    # 3. Расходы превышают доходы
+    if income_this_month > 0 and expense_this_month > income_this_month:
+        insights.append("Расходы в этом месяце превышают доходы")
+ 
+    # 4. Самая крупная категория расходов в этом месяце
+    if this_month_by_cat:
+        top_category, top_amount = max(this_month_by_cat.items(), key=lambda x: x[1])
+        insights.append(
+            f"Больше всего в этом месяце потрачено на «{top_category}»: {float(top_amount):.0f}"
+        )
+ 
+    if not insights:
+        insights.append("Пока недостаточно данных для инсайтов — добавьте больше транзакций")
+ 
+    return {
+        "days_remaining": days_remaining,
+        "daily_allowance": daily_allowance,
+        "daily_allowance_note": daily_allowance_note,
+        "total_budget": total_budget,
+        "expense_this_month": expense_this_month,
+        "income_this_month": income_this_month,
+        "insights": insights,
+    }
+ 

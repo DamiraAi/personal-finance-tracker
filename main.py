@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session  # type: ignore
 from database import Base, engine, create_default_categories
 import models
 import schemas
+
 from auth import (
     hash_password,
     verify_password,
@@ -21,8 +22,8 @@ from auth import (
     DEFAULT_CATEGORIES  # Импортируем наш профессиональный список категорий
 )
 
-from routers import wallets, transactions, debts, persons, categories, reports
 
+from routers import wallets, transactions, debts, persons, categories, reports, budgets
 # Создание таблиц (если их нет)
 models.Base.metadata.create_all(bind=engine)
 
@@ -239,3 +240,4 @@ app.include_router(debts.router)
 app.include_router(persons.router)
 app.include_router(categories.router)
 app.include_router(reports.router)
+app.include_router(budgets.router)

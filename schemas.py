@@ -5,6 +5,7 @@ from pydantic import BaseModel, model_validator
 from typing import Optional, List
 from pydantic import BaseModel, EmailStr
 
+
 # -------- USER --------
 
 class UserCreate(BaseModel):
@@ -129,3 +130,24 @@ class UserPasswordResetRequest(BaseModel):
 class UserPasswordResetConfirm(BaseModel):
     token: str
     new_password: str
+
+ 
+
+ 
+ 
+class BudgetCreate(BaseModel):
+    category_id: int
+    monthly_limit: float
+ 
+ 
+class BudgetOut(BaseModel):
+    id: int
+    category_id: int
+    category_name: str
+    monthly_limit: float
+    spent: float
+    remaining: float
+    percent_used: float
+ 
+    class Config:
+        from_attributes = True
