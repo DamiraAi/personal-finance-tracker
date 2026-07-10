@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import BudgetsSection from "../components/BudgetsSection";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -13,132 +13,134 @@ import {
   PieChart,
   Pie,
   Cell
-} from "recharts"
+} from "recharts";
+import BudgetsSection from "../components/BudgetsSection";
 
-// Базовый URL твоего живого сервера в интернете
-const BASE_URL = "https://finance-backend-tj8e.onrender.com"
+// Базовый URL живого сервера в интернете
+const BASE_URL = "https://finance-backend-tj8e.onrender.com";
 
 function Dashboard() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const { t } = useTranslation("dashboard"); // Используем локаль dashboard
 
   // Основные стейты данных
-  const [wallets, setWallets] = useState([])
-  const [transactions, setTransactions] = useState([])
-  const [report, setReport] = useState(null)
-  const [reportData, setReportData] = useState({ income: [], expense: [] })
-  const [categories, setCategories] = useState([])
+  const [wallets, setWallets] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [report, setReport] = useState(null);
+  const [reportData, setReportData] = useState({ income: [], expense: [] });
+  const [categories, setCategories] = useState([]);
 
-  // НОВОЕ: стейты для долгов
+  // Стейты для долгов
   const [debts, setDebts] = useState([]);
   const [people, setPeople] = useState([]);
   const [newPersonName, setNewPersonName] = useState("");
 
-  // Стейты форм кошельков (теперь используются и для создания, и для редактирования)
-  const [walletName, setWalletName] = useState("")
-  const [walletCurrency, setWalletCurrency] = useState("")
-  const [editingWalletId, setEditingWalletId] = useState(null) // null = создание, id = редактирование
+  // Стейты форм кошельков (используются и для создания, и для редактирования)
+  const [walletName, setWalletName] = useState("");
+  const [walletCurrency, setWalletCurrency] = useState("");
+  const [editingWalletId, setEditingWalletId] = useState(null); // null = создание, id = редактирование
   const [toWalletId, setToWalletId] = useState("");
+
   // Стейты форм создания транзакций
-  const [amount, setAmount] = useState("")
-  const [description, setDescription] = useState("")
-  const [type, setType] = useState("income")
-  const [walletId, setWalletId] = useState("")
-  const [categoryId, setCategoryId] = useState("")
-  const [personId, setPersonId] = useState("")
-  const [debtId, setDebtId] = useState("")
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [type, setType] = useState("income");
+  const [walletId, setWalletId] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [personId, setPersonId] = useState("");
+  const [debtId, setDebtId] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+
   // Категории: имя и тип (расход/доход)
-  const [newCategoryName, setNewCategoryName] = useState("")
-  const [newCategoryType, setNewCategoryType] = useState("expense") 
-  const [showNewCategoryForm, setShowNewCategoryForm] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
+
   // Стейты редактирования транзакции
-  const [editingTxId, setEditingTxId] = useState(null)
-  const [editTxAmount, setEditTxAmount] = useState("")
-  const [editTxDescription, setEditTxDescription] = useState("")
-  const [editTxType, setEditTxType] = useState("income")
-  const [editTxCategoryId, setEditTxCategoryId] = useState("")
-  const [editTxWalletId, setEditTxWalletId] = useState("")
+  const [editingTxId, setEditingTxId] = useState(null);
+  const [editTxAmount, setEditTxAmount] = useState("");
+  const [editTxDescription, setEditTxDescription] = useState("");
+  const [editTxType, setEditTxType] = useState("income");
+  const [editTxCategoryId, setEditTxCategoryId] = useState("");
+  const [editTxWalletId, setEditTxWalletId] = useState("");
 
   // Стейты фильтрации
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterType, setFilterType] = useState("all")
-  const [filterCategory, setFilterCategory] = useState("all")
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [filterCategory, setFilterCategory] = useState("all");
 
   // Стейты пагинации
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Стейты периодов для графиков и отчетов
-  const [period, setPeriod] = useState("month") // week, month, year, custom
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
+  const [period, setPeriod] = useState("month"); // week, month, year, custom
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Стейт красивого уведомления (Toast)
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" })
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
 
   const showNotification = (message, type = "success") => {
-    setToast({ show: true, message, type })
-    setTimeout(() => setToast({ show: false, message: "", type: "success" }), 4000)
-  }
-
-  
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "success" }), 4000);
+  };
 
   const logout = () => {
-    localStorage.removeItem("token")
-    navigate("/")
-  }
+    localStorage.removeItem("token");
+    navigate("/");
+  };
 
   // Получение кошельков
   const getWallets = async () => {
-    const token = localStorage.getItem("token")
+    const token = localStorage.getItem("token");
     const response = await fetch(`${BASE_URL}/wallets`, {
       headers: { Authorization: `Bearer ${token}` }
-    })
+    });
     if (response.ok) {
-      const data = await response.json()
-      setWallets(data)
+      const data = await response.json();
+      setWallets(data);
     }
-  }
+  };
 
   // Получение транзакций конкретного кошелька
   const getTransactions = async (id) => {
-    const currentId = id || walletId
-    if (!currentId) return
+    const currentId = id || walletId;
+    if (!currentId) return;
 
-    const token = localStorage.getItem("token")
+    const token = localStorage.getItem("token");
     const response = await fetch(`${BASE_URL}/transactions?wallet_id=${currentId}`, {
       headers: { Authorization: `Bearer ${token}` }
-    })
+    });
     if (response.ok) {
-      const data = await response.json()
-      setTransactions(data)
+      const data = await response.json();
+      setTransactions(data);
     }
-  }
+  };
 
   // Создание транзакции
   const createTransaction = async () => {
-    const token = localStorage.getItem("token")
-    const currentWalletId = Number(walletId)
+    const token = localStorage.getItem("token");
+    const currentWalletId = Number(walletId);
 
     if (!walletId) {
-      showNotification("Пожалуйста, выберите кошелек!", "error")
-      return
+      showNotification(t("notifications.wallet_required"), "error");
+      return;
     }
 
-    const parsedAmount = Number(amount)
+    const parsedAmount = Number(amount);
     if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
-      showNotification("Введите корректную сумму больше 0!", "error")
-      return
+      showNotification(t("notifications.invalid_amount"), "error");
+      return;
     }
 
     if (["loan_given", "loan_taken", "loan_repaid_to_us", "loan_repaid_by_us"].includes(type) && !personId) {
-      showNotification("Выберите контакт для этой операции!", "error")
-      return
+      showNotification(t("notifications.select_contact"), "error");
+      return;
     }
 
     if (["loan_repaid_to_us", "loan_repaid_by_us"].includes(type) && !debtId) {
-      showNotification("Выберите долг, который хотите вернуть!", "error")
-      return
+      showNotification(t("notifications.select_debt"), "error");
+      return;
     }
 
     const response = await fetch(`${BASE_URL}/transactions`, {
@@ -150,69 +152,63 @@ function Dashboard() {
       body: JSON.stringify({
         type: type,
         amount: parsedAmount,
-        description: description.trim() || "Без описания",
+        description: description.trim() || t("transaction.without_description"),
         wallet_id: Number(currentWalletId),
-        
-        // Отправляем выбранную пользователем дату
         date: new Date(date).toISOString(),
-        
-        // Для операций с долгами обязательно передаём person_id (иначе бэкенд упадёт с NOT NULL constraint)
         person_id: ["loan_given", "loan_taken", "loan_repaid_to_us", "loan_repaid_by_us"].includes(type)
           ? (personId ? parseInt(personId) : null)
           : null,
-        // Для возврата долга обязательно передаём debt_id (бэкенд требует это поле)
         debt_id: ["loan_repaid_to_us", "loan_repaid_by_us"].includes(type)
           ? (debtId ? parseInt(debtId) : null)
           : null,
-        // Внутри тела запроса при создании транзакции убедись, что передается:
         to_wallet_id: type === "transfer" ? parseInt(toWalletId) : null,
         category_id: type === "transfer" ? null : parseInt(categoryId),
       })
-    })
+    });
 
     if (response.ok) {
-      showNotification("Транзакция успешно добавлена!")
-      setAmount("")
-      setDescription("")
-      setCategoryId("")
-      setPersonId("")
-      setDebtId("")
-      getWallets()
-      getReport()
-      fetchDebtsData()
-      setDate(new Date().toISOString().split("T")[0])
-      if (currentWalletId) getTransactions(currentWalletId)
+      showNotification(t("notifications.transaction_created"));
+      setAmount("");
+      setDescription("");
+      setCategoryId("");
+      setPersonId("");
+      setDebtId("");
+      getWallets();
+      getReport();
+      fetchDebtsData();
+      setDate(new Date().toISOString().split("T")[0]);
+      if (currentWalletId) getTransactions(currentWalletId);
     } else {
-      showNotification("Ошибка создания транзакции", "error")
+      showNotification(t("notifications.transaction_error"), "error");
     }
-  }
+  };
 
   // Удаление транзакции
   const deleteTransaction = async (transactionId) => {
-    const token = localStorage.getItem("token")
-    const currentWalletId = Number(walletId)
+    const token = localStorage.getItem("token");
+    const currentWalletId = Number(walletId);
 
     const response = await fetch(`${BASE_URL}/transactions/${transactionId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` }
-    })
+    });
 
     if (response.ok) {
-      showNotification("Транзакция удалена")
-      getWallets()
-      getReport()
-      if (currentWalletId) getTransactions(currentWalletId)
+      showNotification(t("notifications.transaction_deleted"));
+      getWallets();
+      getReport();
+      if (currentWalletId) getTransactions(currentWalletId);
     }
-  }
+  };
 
-  // Единая функция для обработки кнопки кошелька (Создание или Обновление)
+  // Обработка кнопки кошелька (Создание или Обновление)
   const handleWalletSubmit = async () => {
     if (!walletName.trim() || !walletCurrency.trim()) {
-      showNotification("Заполните все поля кошелька!", "error")
-      return
+      showNotification(t("notifications.fill_wallet_fields"), "error");
+      return;
     }
 
-    const token = localStorage.getItem("token")
+    const token = localStorage.getItem("token");
     
     if (editingWalletId) {
       // --- РЕЖИМ РЕДАКТИРОВАНИЯ (PUT) ---
@@ -226,15 +222,15 @@ function Dashboard() {
           name: walletName.trim(),
           currency: walletCurrency.trim().toUpperCase()
         })
-      })
+      });
 
       if (response.ok) {
-        showNotification("Кошелек успешно обновлен")
-        cancelWalletEditing()
-        getWallets()
-        getReport()
+        showNotification(t("notifications.wallet_updated"));
+        cancelWalletEditing();
+        getWallets();
+        getReport();
       } else {
-        showNotification("Ошибка при обновлении кошелька", "error")
+        showNotification(t("notifications.wallet_error"), "error");
       }
     } else {
       // --- РЕЖИМ СОЗДАНИЯ (POST) ---
@@ -248,59 +244,55 @@ function Dashboard() {
           name: walletName.trim(),
           currency: walletCurrency.trim().toUpperCase()
         })
-      })
+      });
 
       if (response.ok) {
-        showNotification("Кошелек успешно создан")
-        setWalletName("")
-        setWalletCurrency("")
-        getWallets()
-        getReport()
+        showNotification(t("notifications.wallet_created"));
+        setWalletName("");
+        setWalletCurrency("");
+        getWallets();
+        getReport();
       } else {
-        showNotification("Ошибка при создании кошелька", "error")
+        showNotification(t("notifications.wallet_error"), "error");
       }
     }
-  }
+  };
 
-  // Вход в режим редактирования кошелька (перенос данных в главную форму)
   const startEditingWallet = (wallet) => {
-    setEditingWalletId(wallet.id)
-    setWalletName(wallet.name)
-    setWalletCurrency(wallet.currency)
-  }
+    setEditingWalletId(wallet.id);
+    setWalletName(wallet.name);
+    setWalletCurrency(wallet.currency);
+  };
 
-  // Выход из режима редактирования кошелька
   const cancelWalletEditing = () => {
-    setEditingWalletId(null)
-    setWalletName("")
-    setWalletCurrency("")
-  }
-
-  
+    setEditingWalletId(null);
+    setWalletName("");
+    setWalletCurrency("");
+  };
 
   const startEditingTransaction = (tx) => {
-    setEditingTxId(tx.id || tx.transaction_id)
-    setEditTxAmount(tx.amount)
-    setEditTxDescription(tx.description)
-    setEditTxType(tx.type)
-    setEditTxCategoryId(tx.category_id || "")
-    setEditTxWalletId(tx.wallet_id || walletId)
-  }
+    setEditingTxId(tx.id || tx.transaction_id);
+    setEditTxAmount(tx.amount);
+    setEditTxDescription(tx.description);
+    setEditTxType(tx.type);
+    setEditTxCategoryId(tx.category_id || "");
+    setEditTxWalletId(tx.wallet_id || walletId);
+  };
 
   // Изменение транзакции
   const updateTransaction = async (id) => {
-    const token = localStorage.getItem("token")
-    const currentWalletId = Number(editTxWalletId) || Number(walletId)
+    const token = localStorage.getItem("token");
+    const currentWalletId = Number(editTxWalletId) || Number(walletId);
 
     if (!currentWalletId) {
-      showNotification("Ошибка: ID кошелька потерян.", "error")
-      return
+      showNotification(t("notifications.wallet_not_found"), "error");
+      return;
     }
 
-    const parsedAmount = Number(editTxAmount)
+    const parsedAmount = Number(editTxAmount);
     if (!editTxAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
-      showNotification("Сумма должна быть числом больше 0!", "error")
-      return
+      showNotification(t("notifications.amount_must_be_positive"), "error");
+      return;
     }
 
     try {
@@ -317,69 +309,69 @@ function Dashboard() {
           wallet_id: currentWalletId,
           category_id: editTxCategoryId ? Number(editTxCategoryId) : null
         })
-      })
+      });
 
       if (response.ok) {
-        showNotification("Транзакция сохранена")
-        setEditingTxId(null)
-        getWallets()
-        getReport()
-        getTransactions(currentWalletId)
+        showNotification(t("notifications.transaction_updated"));
+        setEditingTxId(null);
+        getWallets();
+        getReport();
+        getTransactions(currentWalletId);
       } else {
-        const errData = await response.json()
-        showNotification(errData.detail || "Ошибка обновления", "error")
+        const errData = await response.json();
+        showNotification(errData.detail || t("notifications.transaction_update_error"), "error");
       }
     } catch (error) {
-      console.error("Error saving transaction:", error)
+      console.error("Error saving transaction:", error);
     }
-  }
+  };
 
   // Получение аналитических отчетов по датам
   const getReport = async () => {
-    const token = localStorage.getItem("token")
-    let url = `${BASE_URL}/report`
+    const token = localStorage.getItem("token");
+    let url = `${BASE_URL}/report`;
     
-    const params = new URLSearchParams()
+    const params = new URLSearchParams();
     if (period !== "custom") {
-      params.append("period", period)
+      params.append("period", period);
     } else {
-      if (startDate) params.append("start_date", startDate)
-      if (endDate) params.append("end_date", endDate)
+      if (startDate) params.append("start_date", startDate);
+      if (endDate) params.append("end_date", endDate);
     }
 
-    const queryString = params.toString()
-    if (queryString) url += `?${queryString}`
+    const queryString = params.toString();
+    if (queryString) url += `?${queryString}`;
 
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` }
-    })
+    });
     if (response.ok) {
-      const data = await response.json()
-      setReport(data)
+      const data = await response.json();
+      setReport(data);
     }
-  }
+  };
 
   const fetchReport = async () => {
     try {
-      const token = localStorage.getItem("token")
-      const now = new Date()
-      const year = now.getFullYear()
-      const month = now.getMonth() + 1
+      const token = localStorage.getItem("token");
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
       const response = await fetch(`${BASE_URL}/report?year=${year}&month=${month}`, {
         headers: { Authorization: `Bearer ${token}` }
-      })
+      });
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         setReportData({
           income: Array.isArray(data.income) ? data.income : [],
           expense: Array.isArray(data.expense) ? data.expense : []
-        })
+        });
       }
     } catch (error) {
-      console.error("Ошибка при загрузке аналитики:", error)
+      console.error("Ошибка при загрузке аналитики:", error);
     }
-  }
+  };
 
   const getCategories = async () => {
     try {
@@ -399,7 +391,6 @@ function Dashboard() {
   // Создание категории
   const handleCreateCategory = async (e) => {
     e.preventDefault();
-    const trimmedName = newCategoryName.trim()
     if (!newCategoryName.trim()) return;
 
     try {
@@ -411,31 +402,29 @@ function Dashboard() {
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ 
-          name: newCategoryName,
+          name: newCategoryName.trim(),
           type: type === "income" ? "income" : "expense"
         })
       });
 
       if (response.ok) {
-        const createdCategory = await response.json()
-
-        setCategories([...categories, { ...createdCategory, type: createdCategory.type || type }]) 
-        setCategoryId(createdCategory.id)
-        setNewCategoryName("")
-        setShowNewCategoryForm(false) 
-        showNotification("Категория успешно создана!", "success");
+        const createdCategory = await response.json();
+        setCategories([...categories, { ...createdCategory, type: createdCategory.type || type }]); 
+        setCategoryId(createdCategory.id);
+        setNewCategoryName("");
+        setShowNewCategoryForm(false); 
+        showNotification(t("notifications.category_created"), "success");
         getCategories();
       } else {
-        const errorData = await response.json();
-        showNotification(`Ошибка: ${errorData.detail || "Не удалось создать"}`, "error");
+        showNotification(t("notifications.category_error"), "error");
       }
     } catch (error) {
       console.error("Ошибка при создании категории:", error);
-      showNotification("Произошла ошибка сети", "error");
+      showNotification(t("notifications.network_error"), "error");
     }
   };
 
-  // НОВОЕ: Загрузка данных о долгах и людях
+  // Загрузка данных о долгах и людях
   const fetchDebtsData = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -453,7 +442,7 @@ function Dashboard() {
     }
   };
 
-  // НОВОЕ: Создание нового человека (контакта для долга)
+  // Создание нового контакта для долга
   const handleCreatePerson = async (e) => {
     e.preventDefault();
     if (!newPersonName.trim()) return;
@@ -467,65 +456,63 @@ function Dashboard() {
 
       if (response.ok) {
         setNewPersonName("");
-        showNotification("Контакт успешно добавлен!", "success");
+        showNotification(t("notifications.contact_created"), "success");
         fetchDebtsData();
       } else {
-        showNotification("Не удалось добавить контакт", "error");
+        showNotification(t("notifications.contact_error"), "error");
       }
     } catch (error) {
       console.error("Ошибка при создании контакта:", error);
-      showNotification("Произошла ошибка сети", "error");
+      showNotification(t("notifications.network_error"), "error");
     }
   };
 
   useEffect(() => {
-    getReport()
-  }, [period, startDate, endDate])
+    getReport();
+  }, [period, startDate, endDate]);
 
   useEffect(() => {
-    fetchReport()
-  }, [transactions])
+    fetchReport();
+  }, [transactions]);
 
   useEffect(() => {
-    getWallets()
-    getCategories()
-    fetchDebtsData()
-  }, [])
+    getWallets();
+    getCategories();
+    fetchDebtsData();
+  }, []);
 
   useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm, filterType, filterCategory])
+    setCurrentPage(1);
+  }, [searchTerm, filterType, filterCategory]);
 
   const chartData = report?.daily_data || [
     { date: "Mon", Income: 0, Expense: 0 },
     { date: "Tue", Income: 0, Expense: 0 },
     { date: "Wed", Income: 0, Expense: 0 },
-  ]
+  ];
 
-  // Фильтрация транзакций "на лету"
   const filteredTransactions = transactions.filter((tx) => {
     const matchesSearch = tx.description
       ? tx.description.toLowerCase().includes(searchTerm.toLowerCase())
-      : true
-    const matchesType = filterType === "all" || tx.type === filterType
-    const matchesCategory = filterCategory === "all" || String(tx.category_id) === filterCategory
-    return matchesSearch && matchesType && matchesCategory
-  })
+      : true;
+    const matchesType = filterType === "all" || tx.type === filterType;
+    const matchesCategory = filterCategory === "all" || String(tx.category_id) === filterCategory;
+    return matchesSearch && matchesType && matchesCategory;
+  });
 
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentTransactions = filteredTransactions.slice(indexOfFirstItem, indexOfLastItem)
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage)
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentTransactions = filteredTransactions.slice(indexOfFirstItem, indexOfLastItem);
 
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"]
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"];
 
-  const monthlyExpenseData = Array.isArray(reportData?.expense) ? reportData.expense : []
-  const monthlyIncomeData = Array.isArray(reportData?.income) ? reportData.income : []
+  const monthlyExpenseData = Array.isArray(reportData?.expense) ? reportData.expense : [];
+  const monthlyIncomeData = Array.isArray(reportData?.income) ? reportData.income : [];
 
   const getTypeColor = (txType) => {
-    if (["income", "loan_taken", "loan_repaid_to_us"].includes(txType)) return "#22c55e"
-    return "#ef4444"
-  }
+    if (["income", "loan_taken", "loan_repaid_to_us"].includes(txType)) return "#22c55e";
+    return "#ef4444";
+  };
 
   return (
     <div style={{ backgroundColor: "#0f172a", minHeight: "100vh", color: "white", padding: "40px", fontFamily: "'Inter', sans-serif, Arial" }}>
@@ -545,17 +532,19 @@ function Dashboard() {
       {/* HEADER */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
         <div>
-          <h1 style={{ fontSize: "2.5rem", fontWeight: "800", margin: 0, background: "linear-gradient(to right, #3b82f6, #a855f7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Finance Dashboard</h1>
-          <p style={{ color: "#64748b", margin: "5px 0 0 0" }}>Управляйте своими бюджетами и счетами в одном месте</p>
+          <h1 style={{ fontSize: "2.5rem", fontWeight: "800", margin: 0, background: "linear-gradient(to right, #3b82f6, #a855f7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            {t("title")}
+          </h1>
+          <p style={{ color: "#64748b", margin: "5px 0 0 0" }}>{t("subtitle")}</p>
           <button 
             onClick={() => window.print()} 
-            style={{ padding: "10px 20px", backgroundColor: "#3b82f6", color: "white", borderRadius: "8px", border: "none", cursor: "pointer" }}
+            style={{ padding: "10px 20px", backgroundColor: "#3b82f6", color: "white", borderRadius: "8px", border: "none", cursor: "pointer", marginTop: "10px" }}
           >
-            📄 Сохранить отчет в PDF
+            📄 {t("save_pdf")}
           </button>
         </div>
         <button onClick={logout} style={{ padding: "12px 24px", backgroundColor: "#ef4444", color: "white", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "bold", boxShadow: "0 4px 14px rgba(239, 68, 68, 0.4)" }}>
-          Logout
+          {t("logout")}
         </button>
       </div>
 
@@ -571,15 +560,16 @@ function Dashboard() {
                 color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold"
               }}
             >
-              {p === "week" ? "Неделя" : p === "month" ? "Месяц" : p === "year" ? "Год" : "Кастомно"}
+              {t(`period.${p}`)}
             </button>
           ))}
         </div>
 
         {period === "custom" && (
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ color: "#94a3b8" }}>{t("period.from")}</span>
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ padding: "8px 12px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }} />
-            <span style={{ color: "#94a3b8" }}>по</span>
+            <span style={{ color: "#94a3b8" }}>{t("period.to")}</span>
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ padding: "8px 12px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }} />
           </div>
         )}
@@ -589,15 +579,15 @@ function Dashboard() {
       {report && (
         <div style={{ display: "flex", gap: "20px", marginBottom: "30px", flexWrap: "wrap" }}>
           <div style={{ backgroundColor: "#1e293b", padding: "25px", borderRadius: "15px", flex: 1, borderLeft: "5px solid #22c55e" }}>
-            <h3 style={{ color: "#94a3b8", margin: 0, fontSize: "0.9rem", textTransform: "uppercase" }}>Total Income</h3>
+            <h3 style={{ color: "#94a3b8", margin: 0, fontSize: "0.9rem", textTransform: "uppercase" }}>{t("summary.income")}</h3>
             <h1 style={{ color: "#22c55e", margin: "10px 0 0 0", fontSize: "2rem" }}>{report.total_income}</h1>
           </div>
           <div style={{ backgroundColor: "#1e293b", padding: "25px", borderRadius: "15px", flex: 1, borderLeft: "5px solid #ef4444" }}>
-            <h3 style={{ color: "#94a3b8", margin: 0, fontSize: "0.9rem", textTransform: "uppercase" }}>Total Expense</h3>
+            <h3 style={{ color: "#94a3b8", margin: 0, fontSize: "0.9rem", textTransform: "uppercase" }}>{t("summary.expense")}</h3>
             <h1 style={{ color: "#ef4444", margin: "10px 0 0 0", fontSize: "2rem" }}>{report.total_expense}</h1>
           </div>
           <div style={{ backgroundColor: "#1e293b", padding: "25px", borderRadius: "15px", flex: 1, borderLeft: "5px solid #3b82f6" }}>
-            <h3 style={{ color: "#94a3b8", margin: 0, fontSize: "0.9rem", textTransform: "uppercase" }}>Net Balance</h3>
+            <h3 style={{ color: "#94a3b8", margin: 0, fontSize: "0.9rem", textTransform: "uppercase" }}>{t("summary.balance")}</h3>
             <h1 style={{ color: "#3b82f6", margin: "10px 0 0 0", fontSize: "2rem" }}>{report.net}</h1>
           </div>
         </div>
@@ -606,7 +596,9 @@ function Dashboard() {
       {/* CHARTS */}
       <div style={{ display: "flex", gap: "20px", marginBottom: "30px", flexWrap: "wrap" }}>
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px", flex: 1, minWidth: "300px", height: "320px" }}>
-          <h3 style={{ marginBottom: "15px", marginTop: 0, color: "#cbd5e1" }}>Daily Trends ({period === "custom" ? "Кастомно" : period})</h3>
+          <h3 style={{ marginBottom: "15px", marginTop: 0, color: "#cbd5e1" }}>
+            {t("charts.daily_trends")} ({period === "custom" ? t("period.custom") : t(`period.${period}`)})
+          </h3>
           <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -614,8 +606,8 @@ function Dashboard() {
               <YAxis stroke="#94a3b8" />
               <Tooltip contentStyle={{ backgroundColor: "#1e293b", borderColor: "#475569", color: "#fff", borderRadius: "8px" }} />
               <Legend />
-              <Area type="monotone" dataKey="Income" stroke="#22c55e" fill="#22c55e" fillOpacity={0.1} strokeWidth={2} name="Income" />
-              <Area type="monotone" dataKey="Expense" stroke="#ef4444" fill="#ef4444" fillOpacity={0.1} strokeWidth={2} name="Expense" />
+              <Area type="monotone" dataKey="Income" stroke="#22c55e" fill="#22c55e" fillOpacity={0.1} strokeWidth={2} name={t("transaction.income")} />
+              <Area type="monotone" dataKey="Expense" stroke="#ef4444" fill="#ef4444" fillOpacity={0.1} strokeWidth={2} name={t("transaction.expense")} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -623,23 +615,14 @@ function Dashboard() {
 
       <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginTop: "30px", marginBottom: "30px", justifyContent: "space-around" }}>
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "12px", width: "45%", minWidth: "300px", textAlign: "center" }}>
-          <h3 style={{ color: "white", marginBottom: "15px" }}>Аналитика Расходов</h3>
+          <h3 style={{ color: "white", marginBottom: "15px" }}>{t("charts.expense_analytics")}</h3>
           {monthlyExpenseData.length === 0 ? (
-            <p style={{ color: "#64748b", padding: "40px 0" }}>Нет данных по расходам за этот месяц</p>
+            <p style={{ color: "#64748b", padding: "40px 0" }}>{t("charts.no_expense_data")}</p>
           ) : (
             <div style={{ width: "100%", height: 250 }}>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
-                  <Pie
-                    data={monthlyExpenseData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="total_amount"
-                    nameKey="category_name"
-                  >
+                  <Pie data={monthlyExpenseData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="total_amount" nameKey="category_name">
                     {monthlyExpenseData.map((entry, index) => (
                       <Cell key={`expense-cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
@@ -653,23 +636,14 @@ function Dashboard() {
         </div>
 
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "12px", width: "45%", minWidth: "300px", textAlign: "center" }}>
-          <h3 style={{ color: "white", marginBottom: "15px" }}>Аналитика Доходов</h3>
+          <h3 style={{ color: "white", marginBottom: "15px" }}>{t("charts.income_analytics")}</h3>
           {monthlyIncomeData.length === 0 ? (
-            <p style={{ color: "#64748b", padding: "40px 0" }}>Нет данных по доходам за этот месяц</p>
+            <p style={{ color: "#64748b", padding: "40px 0" }}>{t("charts.no_income_data")}</p>
           ) : (
             <div style={{ width: "100%", height: 250 }}>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
-                  <Pie
-                    data={monthlyIncomeData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="total_amount"
-                    nameKey="category_name"
-                  >
+                  <Pie data={monthlyIncomeData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="total_amount" nameKey="category_name">
                     {monthlyIncomeData.map((entry, index) => (
                       <Cell key={`income-cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
@@ -683,43 +657,37 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* НОВОЕ: Виджет долгов */}
+      {/* ДОЛГИ */}
       <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "12px", marginBottom: "30px", color: "white" }}>
-        <h3 style={{ marginBottom: "20px", borderBottom: "1px solid #334155", paddingBottom: "10px" }}>👥 Учет долгов и обязательств</h3>
+        <h3 style={{ marginBottom: "20px", borderBottom: "1px solid #334155", paddingBottom: "10px" }}>👥 {t("debts.title")}</h3>
 
-        {/* Мини-форма добавления нового контакта */}
         <form onSubmit={handleCreatePerson} style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
           <input
             type="text"
-            placeholder="Contact name (e.g. Alina)"
+            placeholder={t("debts.contact_placeholder")}
             value={newPersonName}
             onChange={(e) => setNewPersonName(e.target.value)}
             style={{ flex: 1, padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
           />
-          <button
-            type="submit"
-            style={{ padding: "10px 20px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}
-          >
-            + Добавить контакт
+          <button type="submit" style={{ padding: "10px 20px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
+            + {t("debts.add_contact")}
           </button>
         </form>
         
         <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
-          
-          {/* Колонка: Мне должны */}
           <div style={{ flex: 1, minWidth: "280px", backgroundColor: "#0f172a", padding: "15px", borderRadius: "8px" }}>
-            <h4 style={{ color: "#10b981", marginBottom: "10px" }}>🟢 Мне должны (Дебиторы)</h4>
+            <h4 style={{ color: "#10b981", marginBottom: "10px" }}>🟢 {t("debts.they_owe")}</h4>
             {debts.filter(d => d.type === "they_owe").length === 0 ? (
-              <p style={{ color: "#64748b", fontSize: "0.9rem" }}>Все долги возвращены! 🎉</p>
+              <p style={{ color: "#64748b", fontSize: "0.9rem" }}>{t("debts.all_paid")}</p>
             ) : (
               debts.filter(d => d.type === "they_owe").map(d => (
                 <div key={d.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px dashed #334155" }}>
-                  <span>{people.find(p => p.id == d.person_id)?.name || "Кто-то"}</span>
+                  <span>{people.find(p => p.id == d.person_id)?.name || t("debts.unknown_person")}</span>
                   <span style={{ fontWeight: "bold", color: "#10b981" }}>
                     {d.remaining !== undefined ? d.remaining : d.amount} ₺
                     {d.already_paid > 0 && (
                       <span style={{ color: "#64748b", fontWeight: "normal", fontSize: "0.75rem", marginLeft: "6px" }}>
-                        (из {d.amount} ₺)
+                        ({t("debts.remaining")} {d.amount} ₺)
                       </span>
                     )}
                   </span>
@@ -728,20 +696,19 @@ function Dashboard() {
             )}
           </div>
 
-          {/* Колонка: Я должен */}
           <div style={{ flex: 1, minWidth: "280px", backgroundColor: "#0f172a", padding: "15px", borderRadius: "8px" }}>
-            <h4 style={{ color: "#ef4444", marginBottom: "10px" }}>🔴 Я должен (Кредиты / Займы)</h4>
+            <h4 style={{ color: "#ef4444", marginBottom: "10px" }}>🔴 {t("debts.we_owe")}</h4>
             {debts.filter(d => d.type === "we_owe").length === 0 ? (
-              <p style={{ color: "#64748b", fontSize: "0.9rem" }}>Вы никому ничего не должны! 🚀</p>
+              <p style={{ color: "#64748b", fontSize: "0.9rem" }}>{t("debts.nothing_owed")}</p>
             ) : (
               debts.filter(d => d.type === "we_owe").map(d => (
                 <div key={d.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px dashed #334155" }}>
-                  <span>{people.find(p => p.id == d.person_id)?.name || "Кредитор"}</span>
+                  <span>{people.find(p => p.id == d.person_id)?.name || t("debts.creditor")}</span>
                   <span style={{ fontWeight: "bold", color: "#ef4444" }}>
                     {d.remaining !== undefined ? d.remaining : d.amount} ₺
                     {d.already_paid > 0 && (
                       <span style={{ color: "#64748b", fontWeight: "normal", fontSize: "0.75rem", marginLeft: "6px" }}>
-                        (из {d.amount} ₺)
+                        ({t("debts.remaining")} {d.amount} ₺)
                       </span>
                     )}
                   </span>
@@ -749,65 +716,59 @@ function Dashboard() {
               ))
             )}
           </div>
-
         </div>
       </div>
 
-      {/* FORMS */}
+      {/* ФОРМЫ */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "30px" }}>
         
-        {/* CREATE / UPDATE WALLET FORM */}
+        {/* КОШЕЛЕК */}
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px", border: editingWalletId ? "2px solid #3b82f6" : "none" }}>
           <h2 style={{ fontSize: "1.2rem", marginBottom: "15px", borderBottom: "1px solid #334155", paddingBottom: "10px", color: editingWalletId ? "#3b82f6" : "white" }}>
-            {editingWalletId ? "Update Wallet" : "Create Wallet"}
+            {editingWalletId ? t("wallet.update") : t("wallet.create")}
           </h2>
-          <input type="text" placeholder="Wallet name" value={walletName} onChange={(e) => setWalletName(e.target.value)} style={{ width: "90%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px" }} /><br />
-          <input type="text" placeholder="Currency (USD, EUR, TRY)" value={walletCurrency} onChange={(e) => setWalletCurrency(e.target.value)} style={{ width: "90%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px" }} /><br />
+          <input type="text" placeholder={t("wallet.name")} value={walletName} onChange={(e) => setWalletName(e.target.value)} style={{ width: "90%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px" }} /><br />
+          <input type="text" placeholder={t("wallet.currency")} value={walletCurrency} onChange={(e) => setWalletCurrency(e.target.value)} style={{ width: "90%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px" }} /><br />
           
           <div style={{ display: "flex", gap: "10px" }}>
             <button onClick={handleWalletSubmit} style={{ flex: 1, padding: "12px", backgroundColor: editingWalletId ? "#22c55e" : "#3b82f6", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
-              {editingWalletId ? "Update Wallet" : "Create Wallet"}
+              {editingWalletId ? t("common.update") : t("common.create")}
             </button>
             {editingWalletId && (
               <button onClick={cancelWalletEditing} style={{ padding: "12px", backgroundColor: "#64748b", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
-                Cancel
+                {t("wallet.cancel")}
               </button>
             )}
           </div>
         </div>
         
-        {/* CREATE TRANSACTION */}
+        {/* СОЗДАНИЕ ТРАНЗАКЦИИ */}
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px" }}>
-          <h2 style={{ fontSize: "1.2rem", marginBottom: "15px", borderBottom: "1px solid #334155", paddingBottom: "10px" }}>Create Transaction</h2>
-          <input type="number" min="0.01" step="any" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} style={{ width: "90%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px" }} />
-          <input type="text" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} style={{ width: "90%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px" }} /><br />
+          <h2 style={{ fontSize: "1.2rem", marginBottom: "15px", borderBottom: "1px solid #334155", paddingBottom: "10px" }}>{t("transaction.title")}</h2>
+          <input type="number" min="0.01" step="any" placeholder={t("transaction.amount")} value={amount} onChange={(e) => setAmount(e.target.value)} style={{ width: "90%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px" }} />
+          <input type="text" placeholder={t("transaction.description")} value={description} onChange={(e) => setDescription(e.target.value)} style={{ width: "90%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px" }} /><br />
           
           <select value={type} onChange={(e) => setType(e.target.value)} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px", width: "95%" }}>
-            <option value="income">Income</option>
-            <option value="expense">Expense</option>
-            <option value="transfer">Transfer / Перевод</option>
-
-            <option value="loan_given">Loan Given (Дал в долг)</option>
-            <option value="loan_taken">Loan Taken (Взял в долг)</option>
-            <option value="loan_repaid_to_us">Loan Repaid To Us (Мне вернули долг)</option>
-            <option value="loan_repaid_by_us">Loan Repaid By Us (Я вернул долг)</option>
+            <option value="income">{t("transaction.income")}</option>
+            <option value="expense">{t("transaction.expense")}</option>
+            <option value="transfer">{t("transaction.transfer")}</option>
+            <option value="loan_given">{t("transaction.loan_given")}</option>
+            <option value="loan_taken">{t("transaction.loan_taken")}</option>
+            <option value="loan_repaid_to_us">{t("transaction.loan_repaid_to_us")}</option>
+            <option value="loan_repaid_by_us">{t("transaction.loan_repaid_by_us")}</option>
           </select>
 
-          {/* ЕСЛИ ЭТО ПЕРЕВОД - ПОКАЗЫВАЕМ ДВА КОШЕЛЬКА */}
           {type === "transfer" ? (
             <>
-              {/* Кошелек Откуда */}
-              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>From Wallet (Откуда):</label>
+              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>{t("wallet.source")}:</label>
               <select value={walletId} onChange={(e) => setWalletId(e.target.value)} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px", width: "95%" }}>
-                <option value="">Select Source Wallet</option>
+                <option value="">{t("wallet.select_source")}</option>
                 {wallets.map(w => <option key={w.id} value={w.id}>{w.name} ({w.currency})</option>)}
               </select>
 
-              {/* Кошелек Куда */}
-              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>To Wallet (Куда):</label>
+              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>{t("wallet.destination")}:</label>
               <select value={toWalletId} onChange={(e) => setToWalletId(e.target.value)} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px", width: "95%" }}>
-                <option value="">Select Destination Wallet</option>
-                {/* Исключаем из списка тот кошелек, который выбран в качестве источника */}
+                <option value="">{t("wallet.select_destination")}</option>
                 {wallets.filter(w => w.id.toString() !== walletId.toString()).map(w => (
                   <option key={w.id} value={w.id}>{w.name} ({w.currency})</option>
                 ))}
@@ -815,225 +776,133 @@ function Dashboard() {
             </>
           ) : (
             <>
-              {/* ОБЫЧНЫЙ ВЫБОР КОШЕЛЬКА ДЛЯ INCOME/EXPENSE */}
               <select value={walletId} onChange={(e) => { setWalletId(e.target.value); if(typeof getTransactions === 'function') getTransactions(e.target.value); }} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px", width: "95%" }}>
-                <option value="">Select Wallet</option>
+                <option value="">{t("wallet.select")}</option>
                 {wallets.map(w => <option key={w.id} value={w.id}>{w.name} ({w.currency})</option>)}
               </select>
               <br />
             </>
           )}
 
-          {/* Выбор контакта — только для операций с долгами */}
           {["loan_given", "loan_taken", "loan_repaid_to_us", "loan_repaid_by_us"].includes(type) && (
             <div style={{ marginBottom: "15px", width: "95%" }}>
-              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>
-                Контакт (кому / от кого):
-              </label>
-              <select
-                value={personId}
-                onChange={(e) => setPersonId(e.target.value)}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
-              >
-                <option value="">Выберите контакт</option>
+              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>{t("debts.contact")}:</label>
+              <select value={personId} onChange={(e) => setPersonId(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}>
+                <option value="">{t("debts.select_contact")}</option>
                 {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
-              {people.length === 0 && (
-                <p style={{ color: "#94a3b8", fontSize: "0.8rem", marginTop: "5px" }}>
-                  Нет контактов — добавьте их в блоке "Учет долгов" ниже.
-                </p>
-              )}
+              {people.length === 0 && <p style={{ color: "#94a3b8", fontSize: "0.8rem", marginTop: "5px" }}>{t("debts.no_contacts")}</p>}
             </div>
           )}
 
-          {/* Выбор конкретного долга — только для возврата долга */}
           {["loan_repaid_to_us", "loan_repaid_by_us"].includes(type) && (
             <div style={{ marginBottom: "15px", width: "95%" }}>
-              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>
-                Какой долг возвращаем:
-              </label>
-              <select
-                value={debtId}
-                onChange={(e) => setDebtId(e.target.value)}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
-              >
-                <option value="">Выберите долг</option>
+              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>{t("debts.repay_debt")}:</label>
+              <select value={debtId} onChange={(e) => setDebtId(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}>
+                <option value="">{t("debts.select_debt")}</option>
                 {debts
                   .filter(d => type === "loan_repaid_to_us" ? d.type === "they_owe" : d.type === "we_owe")
                   .map(d => {
-                    const personName = people.find(p => p.id == d.person_id)?.name || "Неизвестно"
-                    const amountToShow = d.remaining !== undefined ? d.remaining : d.amount
-                    return (
-                      <option key={d.id} value={d.id}>
-                        {personName} — остаток {amountToShow} ₺
-                      </option>
-                    )
+                    const personName = people.find(p => p.id == d.person_id)?.name || t("debts.unknown_person");
+                    const amountToShow = d.remaining !== undefined ? d.remaining : d.amount;
+                    return <option key={d.id} value={d.id}>{personName} — {t("wallet.balance")}: {amountToShow} ₺</option>;
                   })}
               </select>
               {debts.filter(d => type === "loan_repaid_to_us" ? d.type === "they_owe" : d.type === "we_owe").length === 0 && (
-                <p style={{ color: "#94a3b8", fontSize: "0.8rem", marginTop: "5px" }}>
-                  Нет активных долгов этого типа для возврата.
-                </p>
+                <p style={{ color: "#94a3b8", fontSize: "0.8rem", marginTop: "5px" }}>{t("debts.no_active_debts")}</p>
               )}
             </div>
           )}
 
-          {/* Умный селектор категорий: подстраивается под тип операции */}
           {(type === "income" || type === "expense") && (
             <div style={{ marginBottom: "15px", width: "95%" }}>
-              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>
-                Category:
-              </label>
-
+              <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>{t("category.title")}:</label>
               <div style={{ display: "flex", gap: "10px" }}>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  style={{ flex: 1, padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
-              >
-                  <option value="">Select Category (Optional)</option>
-                  {categories
-                    .filter(cat => !cat.type || cat.type === type)
-                    .map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))
-                }
-              </select>
-
-              <button
-                type="button"
-                onClick={() => setShowNewCategoryForm(!showNewCategoryForm)}
-                style={{ padding: "0 15px", borderRadius: "8px", backgroundColor: "#10b981", color: "white", border: "none", cursor: "pointer", fontSize: "1.2rem", fontWeight: "bold" }}
-              >
-                +
-              </button>
-            </div>
-
-            {/* мини-форма создания категории без перезагрузки страницы */}
-            {showNewCategoryForm && (
-              <form onSubmit={handleCreateCategory} style={{ marginTop: "10px", padding: "10px", borderRadius: "8px", backgroundColor: "#1e293b", border: "1px dashed #475569" }}>
-              <input
-                type="text"
-                placeholder="Название, например Крипта"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                style={{ width: "90%", padding: "8px", borderRadius: "6px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "8px" }}
-              />
-
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button type="submit" style={{ padding: "5px 10px", borderRadius: "6px", backgroundColor: "#3b82f6", color: "white", border: "none", cursor: "pointer", fontSize: "0.85rem" }}>
-                  Save
-                </button>
-              
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowNewCategoryForm(false)
-                    setNewCategoryName("")
-                  }}
-                  style={{ padding: "5px 10px", borderRadius: "6px", backgroundColor: "#64748b", color: "white", border: "none", cursor: "pointer", fontSize: "0.85rem" }}
-                >
-                  Cancel
-                </button>
+                <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} style={{ flex: 1, padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}>
+                  <option value="">{t("category.select")} ({t("category.optional")})</option>
+                  {categories.filter(cat => !cat.type || cat.type === type).map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+                <button type="button" onClick={() => setShowNewCategoryForm(!showNewCategoryForm)} style={{ padding: "0 15px", borderRadius: "8px", backgroundColor: "#10b981", color: "white", border: "none", cursor: "pointer", fontSize: "1.2rem", fontWeight: "bold" }}>+</button>
               </div>
-            </form>
-          )}
-        </div>
-      )}         
-            <div style={{ marginBottom: "15px", width: "95%" }}>
-             <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>Дата операции:</label>
-             <input 
-               type="date" 
-                value={date} 
-                onChange={(e) => setDate(e.target.value)} 
-                max={new Date().toISOString().split('T')[0]} // Ограничиваем, чтобы нельзя было заглянуть в будущее
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
-              />
-            </div>       
-          <button onClick={createTransaction} style={{ width: "100%", padding: "12px", backgroundColor: "#22c55e", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>Create Transaction</button>
+
+              {showNewCategoryForm && (
+                <form onSubmit={handleCreateCategory} style={{ marginTop: "10px", padding: "10px", borderRadius: "8px", backgroundColor: "#1e293b", border: "1px dashed #475569" }}>
+                  <input type="text" placeholder={t("category.placeholder")} value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} style={{ width: "90%", padding: "8px", borderRadius: "6px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "8px" }} />
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button type="submit" style={{ padding: "5px 10px", borderRadius: "6px", backgroundColor: "#3b82f6", color: "white", border: "none", cursor: "pointer", fontSize: "0.85rem" }}>{t("category.save")}</button>
+                    <button type="button" onClick={() => { setShowNewCategoryForm(false); setNewCategoryName(""); }} style={{ padding: "5px 10px", borderRadius: "6px", backgroundColor: "#64748b", color: "white", border: "none", cursor: "pointer", fontSize: "0.85rem" }}>{t("category.cancel")}</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}         
+          <div style={{ marginBottom: "15px", width: "95%" }}>
+            <label style={{ color: "#94a3b8", fontSize: "0.85rem", display: "block", marginBottom: "5px" }}>{t("transaction.date")}:</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} max={new Date().toISOString().split('T')[0]} style={{ width: "100%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }} />
+          </div>       
+          <button onClick={createTransaction} style={{ width: "100%", padding: "12px", backgroundColor: "#22c55e", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
+            {t("transaction.create")}
+          </button>
         </div>
       </div>
            
-      {/* FOOTER TABLES */}
+      {/* ТАБЛИЦЫ СПИСКОВ */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "20px" }}>
         
-        {/* WALLETS LIST */}
+        {/* КОШЕЛЬКИ */}
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px" }}>
-          <h2 style={{ fontSize: "1.3rem", marginBottom: "20px" }}>Wallets ({wallets.length})</h2>
+          <h2 style={{ fontSize: "1.3rem", marginBottom: "20px" }}>{t("wallet.title")} ({wallets.length})</h2>
           {wallets.map((wallet) => (
             <div key={wallet.id} style={{ backgroundColor: "#334155", padding: "15px", borderRadius: "12px", marginBottom: "15px", border: editingWalletId === wallet.id ? "1px dashed #3b82f6" : "none" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h3 style={{ margin: "0 0 5px 0", color: "#f8fafc" }}>{wallet.name}</h3>
-                  <p style={{ margin: "5px 0", fontSize: "1.1rem" }}>Balance: <strong>{wallet.balance} {wallet.currency}</strong></p>
+                  <p style={{ margin: "5px 0", fontSize: "1.1rem" }}>{t("wallet.balance")}: <strong>{wallet.balance} {wallet.currency}</strong></p>
                   <p style={{ margin: "5px 0", fontSize: "12px", color: "#94a3b8" }}>ID: {wallet.id}</p>
                 </div>
-                <button 
-                  onClick={() => startEditingWallet(wallet)} 
-                  style={{ 
-                    padding: "8px 14px", 
-                    backgroundColor: editingWalletId === wallet.id ? "#64748b" : "#3b82f6", 
-                    color: "white", 
-                    border: "none", 
-                    borderRadius: "8px", 
-                    fontWeight: "bold",
-                    cursor: "pointer"
-                  }}
-                  disabled={editingWalletId === wallet.id}
-                >
-                  {editingWalletId === wallet.id ? "Editing..." : "Edit"}
+                <button onClick={() => startEditingWallet(wallet)} style={{ padding: "8px 14px", backgroundColor: editingWalletId === wallet.id ? "#64748b" : "#3b82f6", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }} disabled={editingWalletId === wallet.id}>
+                  {editingWalletId === wallet.id ? t("wallet.editing") : t("wallet.edit")}
                 </button>
               </div>
             </div>
           ))}
         </div>
+        
         <BudgetsSection />
-        {/* TRANSACTIONS LIST */}
+
+        {/* ИСТОРИЯ ТРАНЗАКЦИЙ */}
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px" }}>
-          <h2 style={{ fontSize: "1.3rem", marginBottom: "20px" }}>Transactions</h2>
+          <h2 style={{ fontSize: "1.3rem", marginBottom: "20px" }}>{t("transactions.title")}</h2>
 
           <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
-            <input 
-              type="text" 
-              placeholder="🔍 Поиск по описанию..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ flex: 1, minWidth: "150px", padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
-            />
+            <input type="text" placeholder={t("transactions.search")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, minWidth: "150px", padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }} />
             
-            <select 
-              value={filterType} 
-              onChange={(e) => setFilterType(e.target.value)}
-              style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
-            >
-              <option value="all">Все типы</option>
-              <option value="income">Income</option>
-              <option value="expense">Expense</option>
-              <option value="transfer">Transfer (Перевод между счетами)</option>
-              <option value="loan_given">Loan Given</option>
-              <option value="loan_taken">Loan Taken</option>
-              <option value="loan_repaid_to_us">Loan Repaid To Us</option>
-              <option value="loan_repaid_by_us">Loan Repaid By Us</option>
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}>
+              <option value="all">{t("transactions.all_types")}</option>
+              <option value="income">{t("transaction.income")}</option>
+              <option value="expense">{t("transaction.expense")}</option>
+              <option value="transfer">{t("transaction.transfer")}</option>
+              <option value="loan_given">{t("transaction.loan_given")}</option>
+              <option value="loan_taken">{t("transaction.loan_taken")}</option>
+              <option value="loan_repaid_to_us">{t("transaction.loan_repaid_to_us")}</option>
+              <option value="loan_repaid_by_us">{t("transaction.loan_repaid_by_us")}</option>
             </select>
 
-            <select 
-              value={filterCategory} 
-              onChange={(e) => setFilterCategory(e.target.value)}
-              style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
-            >
-              <option value="all">Все категории</option>
+            <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}>
+              <option value="all">{t("transactions.all_categories")}</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
 
           {currentTransactions.length === 0 ? (
-            <p style={{ color: "#94a3b8", textAlign: "center", padding: "20px" }}>Транзакции не найдены или кошелек не выбран.</p>
+            <p style={{ color: "#94a3b8", textAlign: "center", padding: "20px" }}>{t("transactions.not_found")}</p>
           ) : (
             currentTransactions.map((transaction) => {
               const txId = transaction.id || transaction.transaction_id;
               const matchedCategory = categories.find(c => c.id === transaction.category_id);
-              const categoryName = matchedCategory ? matchedCategory.name : "No Category";
+              const categoryName = matchedCategory ? matchedCategory.name : t("transactions.no_category");
               
               return (
                 <div key={txId} style={{ backgroundColor: "#334155", padding: "15px", borderRadius: "12px", marginBottom: "15px" }}>
@@ -1043,23 +912,23 @@ function Dashboard() {
                       <input type="text" value={editTxDescription} onChange={(e) => setEditTxDescription(e.target.value)} style={{ padding: "8px", borderRadius: "6px", backgroundColor: "#1e293b", color: "white", border: "1px solid #475569", marginBottom: "10px", width: "50%" }} /><br />
                       
                       <select value={editTxType} onChange={(e) => setEditTxType(e.target.value)} style={{ padding: "8px", borderRadius: "6px", backgroundColor: "#1e293b", color: "white", border: "1px solid #475569", marginRight: "10px", marginBottom: "10px" }}>
-                        <option value="income">Income</option>
-                        <option value="expense">Expense</option>
-                        <option value="transfer">Transfer / Перевод</option>
-                        <option value="loan_given">Loan Given</option>
-                        <option value="loan_taken">Loan Taken</option>
-                        <option value="loan_repaid_to_us">Loan Repaid To Us</option>
-                        <option value="loan_repaid_by_us">Loan Repaid By Us</option>
+                        <option value="income">{t("transaction.income")}</option>
+                        <option value="expense">{t("transaction.expense")}</option>
+                        <option value="transfer">{t("transaction.transfer")}</option>
+                        <option value="loan_given">{t("transaction.loan_given")}</option>
+                        <option value="loan_taken">{t("transaction.loan_taken")}</option>
+                        <option value="loan_repaid_to_us">{t("transaction.loan_repaid_to_us")}</option>
+                        <option value="loan_repaid_by_us">{t("transaction.loan_repaid_by_us")}</option>
                       </select>
 
                       <select value={editTxCategoryId} onChange={(e) => setEditTxCategoryId(e.target.value)} style={{ padding: "8px", borderRadius: "6px", backgroundColor: "#1e293b", color: "white", border: "1px solid #475569", marginRight: "10px", marginBottom: "10px" }}>
-                        <option value="">No Category</option>
+                        <option value="">{t("transactions.no_category")}</option>
                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
                       <br />
 
-                      <button onClick={() => updateTransaction(txId)} style={{ padding: "8px 16px", backgroundColor: "#22c55e", color: "white", border: "none", borderRadius: "6px", marginRight: "5px", fontWeight: "bold" }}>Save</button>
-                      <button onClick={() => setEditingTxId(null)} style={{ padding: "8px 16px", backgroundColor: "#64748b", color: "white", border: "none", borderRadius: "6px" }}>Cancel</button>
+                      <button onClick={() => updateTransaction(txId)} style={{ padding: "8px 16px", backgroundColor: "#22c55e", color: "white", border: "none", borderRadius: "6px", marginRight: "5px", fontWeight: "bold" }}>{t("transactions.save")}</button>
+                      <button onClick={() => setEditingTxId(null)} style={{ padding: "8px 16px", backgroundColor: "#64748b", color: "white", border: "none", borderRadius: "6px" }}>{t("transactions.cancel")}</button>
                     </div>
                   ) : (
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1067,9 +936,9 @@ function Dashboard() {
                         <span style={{ fontSize: "1.2rem", fontWeight: "bold", color: getTypeColor(transaction.type), marginRight: "15px" }}>
                           {["income", "loan_taken", "loan_repaid_to_us"].includes(transaction.type) ? "+" : "-"} {transaction.amount}
                         </span>
-                        <span style={{ backgroundColor: "#475569", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", marginRight: "10px" }}>{transaction.type}</span>
+                        <span style={{ backgroundColor: "#475569", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", marginRight: "10px" }}>{t(`transaction.${transaction.type}`)}</span>
                         <span style={{ color: "#94a3b8", fontSize: "14px" }}>{categoryName}</span>
-                        <p style={{ margin: "5px 0 0 0", color: "#e2e8f0" }}>{transaction.description || "Без описания"}</p>
+                        <p style={{ margin: "5px 0 0 0", color: "#e2e8f0" }}>{transaction.description || t("transaction.without_description")}</p>
                         <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: "12px" }}>
                           {transaction.date
                             ? new Date(transaction.date).toLocaleString("ru-RU", {
@@ -1083,19 +952,19 @@ function Dashboard() {
                         </p>
                       </div>
                       <div style={{ display: "flex", gap: "5px" }}>
-                        <button onClick={() => startEditingTransaction(transaction)} style={{ padding: "6px 12px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "6px" }}>Edit</button>
-                        <button onClick={() => deleteTransaction(txId)} style={{ padding: "6px 12px", backgroundColor: "#ef4444", color: "white", border: "none", borderRadius: "6px" }}>Delete</button>
+                        <button onClick={() => startEditingTransaction(transaction)} style={{ padding: "6px 12px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "6px" }}>{t("transactions.edit")}</button>
+                        <button onClick={() => deleteTransaction(txId)} style={{ padding: "6px 12px", backgroundColor: "#ef4444", color: "white", border: "none", borderRadius: "6px" }}>{t("transactions.delete")}</button>
                       </div>
                     </div>
                   )}
                 </div>
-              )
+              );
             })
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Dashboard
+export default Dashboard;

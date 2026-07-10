@@ -1,0 +1,182 @@
+{
+  "title": "Finance Dashboard",
+  "subtitle": "Manage your finances and accounts in one place",
+
+  "logout": "Log Out",
+  "save_pdf": "Export Report as PDF",
+
+  "period": {
+    "week": "Week",
+    "month": "Month",
+    "year": "Year",
+    "custom": "Custom",
+    "from": "From",
+    "to": "To"
+  },
+
+  "summary": {
+    "income": "Total Income",
+    "expense": "Total Expenses",
+    "balance": "Current Balance"
+  },
+
+  "charts": {
+    "daily_trends": "Daily Trends",
+    "expense_analytics": "Expense Analytics",
+    "income_analytics": "Income Analytics",
+    "no_expense_data": "No expense data available for this month.",
+    "no_income_data": "No income data available for this month."
+  },
+
+  "debts": {
+    "title": "Debts & Loans",
+    "add_contact": "Add Contact",
+    "contact_name": "Contact Name",
+    "contact_placeholder": "Example: Alice",
+
+    "they_owe": "Money Owed to Me",
+    "we_owe": "Money I Owe",
+
+    "debtors": "Debtors",
+    "creditors": "Creditors",
+
+    "all_paid": "All debts have been repaid!",
+    "nothing_owed": "You don't owe anyone anything!",
+
+    "unknown_person": "Unknown",
+    "creditor": "Creditor",
+
+    "remaining": "Remaining",
+    "from_amount": "of",
+
+    "contact": "Contact",
+    "select_contact": "Select Contact",
+    "no_contacts": "No contacts yet. Add a new contact.",
+
+    "select_debt": "Select Debt",
+    "repay_debt": "Which debt would you like to repay?",
+    "no_active_debts": "There are no active debts of this type."
+  },
+
+  "wallet": {
+    "title": "Wallets",
+
+    "create": "Create Wallet",
+    "update": "Update Wallet",
+
+    "name": "Wallet Name",
+    "currency": "Currency",
+
+    "select": "Select Wallet",
+
+    "balance": "Balance",
+
+    "edit": "Edit",
+    "editing": "Editing...",
+    "cancel": "Cancel",
+
+    "source": "Source Wallet",
+    "destination": "Destination Wallet",
+
+    "select_source": "Select Source Wallet",
+    "select_destination": "Select Destination Wallet"
+  },
+
+  "transaction": {
+    "title": "Create Transaction",
+
+    "amount": "Amount",
+    "description": "Description",
+    "date": "Transaction Date",
+
+    "type": "Transaction Type",
+
+    "income": "Income",
+    "expense": "Expense",
+    "transfer": "Transfer",
+
+    "loan_given": "Money Lent",
+    "loan_taken": "Money Borrowed",
+    "loan_repaid_to_us": "Loan Repaid to Me",
+    "loan_repaid_by_us": "Loan Repaid by Me",
+
+    "create": "Create Transaction",
+
+    "without_description": "No Description"
+  },
+
+  "category": {
+    "title": "Category",
+
+    "select": "Select Category",
+    "optional": "Optional",
+
+    "new": "New Category",
+    "name": "Category Name",
+    "placeholder": "Example: Cryptocurrency",
+
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+
+  "transactions": {
+    "title": "Transactions",
+
+    "search": "Search by description...",
+
+    "all_types": "All Types",
+    "all_categories": "All Categories",
+
+    "not_found": "No transactions found or no wallet selected.",
+
+    "no_category": "Uncategorized",
+
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+
+  "notifications": {
+    "wallet_required": "Please select a wallet.",
+    "invalid_amount": "Please enter a valid amount greater than 0.",
+    "amount_must_be_positive": "Amount must be greater than 0.",
+
+    "select_contact": "Please select a contact for this transaction.",
+    "select_debt": "Please select a debt to repay.",
+
+    "transaction_created": "Transaction created successfully.",
+    "transaction_deleted": "Transaction deleted successfully.",
+    "transaction_updated": "Transaction updated successfully.",
+    "transaction_error": "Failed to create transaction.",
+    "transaction_update_error": "Failed to update transaction.",
+
+    "wallet_created": "Wallet created successfully.",
+    "wallet_updated": "Wallet updated successfully.",
+    "wallet_error": "Failed to save wallet.",
+
+    "category_created": "Category created successfully.",
+    "category_error": "Failed to create category.",
+
+    "contact_created": "Contact added successfully.",
+    "contact_error": "Failed to add contact.",
+
+    "network_error": "Network error.",
+
+    "fill_wallet_fields": "Please fill in all wallet fields.",
+    "wallet_not_found": "Error: Wallet not found."
+  },
+
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "update": "Update",
+    "delete": "Delete",
+    "edit": "Edit",
+    "select": "Select",
+    "loading": "Loading...",
+    "yes": "Yes",
+    "no": "No"
+  }
+}
