@@ -1,5 +1,34 @@
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# 1. СНАЧАЛА создаем базовые элементы SQLAlchemy
+engine = create_engine(DATABASE_URL)
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+Base = declarative_base()
+
+# 2. ПОТОМ объявляем функции работы с сессией
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# 3. И ТОЛЬКО В САМОМ КОНЦЕ, внутри функции, делаем импорт моделей
 def create_default_categories(db, user_id: int):
-    # ЛОКАЛЬНЫЙ ИМПОРТ: перенесли внутрь функции, чтобы избежать циклической зависимости
+    # Локальный импорт здесь безопасен, так как Base уже гарантированно создан выше!
     from models import Category 
     
     exists = db.query(Category).filter(Category.user_id == user_id).first()
