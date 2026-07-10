@@ -1063,6 +1063,17 @@ function Dashboard() {
                         <span style={{ backgroundColor: "#475569", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", marginRight: "10px" }}>{transaction.type}</span>
                         <span style={{ color: "#94a3b8", fontSize: "14px" }}>{categoryName}</span>
                         <p style={{ margin: "5px 0 0 0", color: "#e2e8f0" }}>{transaction.description || "Без описания"}</p>
+                        <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: "12px" }}>
+                          {transaction.date
+                            ? new Date(transaction.date).toLocaleString("ru-RU", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                          })
+                          : "Дата неизвестна"}
+                        </p>
                       </div>
                       <div style={{ display: "flex", gap: "5px" }}>
                         <button onClick={() => startEditingTransaction(transaction)} style={{ padding: "6px 12px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "6px" }}>Edit</button>

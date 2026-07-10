@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks  # type: ig
 from fastapi.security import OAuth2PasswordRequestForm  # type: ignore
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 from sqlalchemy.orm import Session  # type: ignore
-
+from routers import wallets, transactions, debts, persons, categories, reports, budgets
 from database import Base, engine, create_default_categories
 import models
 import schemas
@@ -23,7 +23,7 @@ from auth import (
 )
 
 
-from routers import wallets, transactions, debts, persons, categories, reports, budgets
+
 # Создание таблиц (если их нет)
 models.Base.metadata.create_all(bind=engine)
 
