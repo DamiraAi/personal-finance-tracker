@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import BudgetsSection from "../components/BudgetsSection";
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -546,6 +547,12 @@ function Dashboard() {
         <div>
           <h1 style={{ fontSize: "2.5rem", fontWeight: "800", margin: 0, background: "linear-gradient(to right, #3b82f6, #a855f7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Finance Dashboard</h1>
           <p style={{ color: "#64748b", margin: "5px 0 0 0" }}>Управляйте своими бюджетами и счетами в одном месте</p>
+          <button 
+            onClick={() => window.print()} 
+            style={{ padding: "10px 20px", backgroundColor: "#3b82f6", color: "white", borderRadius: "8px", border: "none", cursor: "pointer" }}
+          >
+            📄 Сохранить отчет в PDF
+          </button>
         </div>
         <button onClick={logout} style={{ padding: "12px 24px", backgroundColor: "#ef4444", color: "white", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "bold", boxShadow: "0 4px 14px rgba(239, 68, 68, 0.4)" }}>
           Logout
@@ -981,7 +988,7 @@ function Dashboard() {
             </div>
           ))}
         </div>
-
+        <BudgetsSection />
         {/* TRANSACTIONS LIST */}
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px" }}>
           <h2 style={{ fontSize: "1.3rem", marginBottom: "20px" }}>Transactions</h2>

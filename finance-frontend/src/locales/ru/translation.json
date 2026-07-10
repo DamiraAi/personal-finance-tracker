@@ -1,0 +1,13 @@
+{
+  "login_title": "Войти в приложение",
+  "email_label": "Email",
+  "password_label": "Пароль",
+  "forgot_password": "Забыли пароль?",
+  "login_btn": "Войти",
+  "register_btn": "Зарегистрироваться",
+  "recovery_title": "Восстановление пароля",
+  "recovery_desc": "Введите ваш Email, и мы отправим вам ссылку для сброса пароля.",
+  "send_link_btn": "Отправить ссылку",
+  "back_to_login": "Вернуться к входу",
+  "loading": "Загрузка..."
+}

@@ -1,0 +1,13 @@
+{
+  "login_title": "Log In to App",
+  "email_label": "Email",
+  "password_label": "Password",
+  "forgot_password": "Forgot Password?",
+  "login_btn": "Log In",
+  "register_btn": "Register",
+  "recovery_title": "Password Recovery",
+  "recovery_desc": "Enter your Email, and we will send you a password reset link.",
+  "send_link_btn": "Send Link",
+  "back_to_login": "Back to Login",
+  "loading": "Loading..."
+}

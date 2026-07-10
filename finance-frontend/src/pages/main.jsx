@@ -1,6 +1,7 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
 
+
 import {
   BrowserRouter,
   Routes,
@@ -9,6 +10,9 @@ import {
 
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
+import './i18n'
+
+
 
 ReactDOM.createRoot(
   document.getElementById("root")

@@ -1,0 +1,13 @@
+{
+  "login_title": "Uygulamaya Giriş Yap",
+  "email_label": "E-posta",
+  "password_label": "Şifre",
+  "forgot_password": "Şifremi Unuttum?",
+  "login_btn": "Giriş Yap",
+  "register_btn": "Kayıt Ol",
+  "recovery_title": "Şifre Yenileme",
+  "recovery_desc": "E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.",
+  "send_link_btn": "Bağlantı Gönder",
+  "back_to_login": "Giriş Ekranına Dön",
+  "loading": "Yükleniyor..."
+}
