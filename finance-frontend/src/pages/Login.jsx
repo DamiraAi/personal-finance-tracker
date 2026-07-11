@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 export default function Login() {
   // Подключаем выделенный неймспейс "auth" для чистоты структуры локализации
-  const { t, i18n } = useTranslation("auth");
+  const { t, i18n } = useTranslation("translation");
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
