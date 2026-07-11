@@ -1,7 +1,7 @@
 {
   
   "loading": "Yükleniyor...",
-  "no_account": "Henüz hesabınız yok mu?",
+  
   "register_link": "Kayıt Ol",
   "budgets_title": "Bütçeler ve Analizler",
   "daily_allowance_label": "Bugün harcanabilir (Ay sonuna {{days}} gün kaldı)",
@@ -83,5 +83,37 @@
   "alert_pwd_mismatch": "Şifreler birbiriyle eşleşmiyor.",
   "alert_pwd_too_short": "Şifre en az 6 karakter uzunluğunda olmalıdır.",
   "alert_reset_failed": "Şifre sıfırlanamadı. Bağlantının süresi dolmuş veya bağlantı geçersiz olabilir.",
-  "alert_connection_error": "Sunucuya bağlanılamadı."
+  "alert_connection_error": "Sunucuya bağlanılamadı.",
+   "login_title": "Giriş Yap",
+  "register_title": "Hesap Oluştur",
+  "recovery_title": "Şifremi Unuttum",
+  "recovery_desc": "Hesabınıza kayıtlı e-posta adresinizi girin. Size bir şifre sıfırlama bağlantısı göndereceğiz.",
+
+  "username_label": "Kullanıcı Adı",
+  "email_label": "E-posta Adresi",
+  "password_label": "Şifre",
+
+  "forgot_password": "Şifrenizi mi unuttunuz?",
+
+  "login_btn": "Giriş Yap",
+  "register_btn": "Hesap Oluştur",
+  "send_link_btn": "Sıfırlama Bağlantısı Gönder",
+  "back_to_login": "Giriş Sayfasına Dön",
+
+  "no_account": "Hesabınız yok mu? Hesap Oluşturun",
+  "have_account": "Zaten bir hesabınız var mı? Giriş Yapın",
+
+  
+
+  "alert_fill_all": "Lütfen tüm alanları doldurun.",
+  "alert_fill_all_register": "Lütfen kullanıcı adı, e-posta adresi ve şifre alanlarını doldurun.",
+  "alert_fill_email": "Lütfen geçerli bir e-posta adresi girin.",
+
+  "alert_login_success": "Başarıyla giriş yaptınız.",
+  "alert_register_success": "Hesabınız başarıyla oluşturuldu.",
+  "alert_recovery_sent": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.",
+
+  "alert_login_error": "Kullanıcı adı veya şifre hatalı.",
+  "alert_register_error": "Hesap oluşturulamadı. Lütfen tekrar deneyin.",
+  "alert_server_error": "Sunucuya bağlanılamadı."
 }

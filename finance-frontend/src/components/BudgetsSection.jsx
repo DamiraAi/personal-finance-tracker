@@ -1,26 +1,27 @@
-import { useState, useEffect } from "react"
-import { useTranslation } from "react-i18next" // <-- Импортируем хук
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
-const API_BASE = "https://finance-backend-tj8e.onrender.com"
+const API_BASE = "https://finance-backend-tj8e.onrender.com";
 
 function authHeaders() {
-  const token = localStorage.getItem("token")
+  const token = localStorage.getItem("token");
   return {
     "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
-  }
+  };
 }
 
 function BudgetsSection() {
-  const { t } = useTranslation() // <-- Активируем функцию t()
+  // Указываем пространство имен "dashboard", чтобы подтягивать строгие финансовые термины
+  const { t } = useTranslation("dashboard"); 
   
-  const [categories, setCategories] = useState([])
-  const [budgets, setBudgets] = useState([])
-  const [insights, setInsights] = useState(null)
+  const [categories, setCategories] = useState([]);
+  const [budgets, setBudgets] = useState([]);
+  const [insights, setInsights] = useState(null);
 
-  const [selectedCategory, setSelectedCategory] = useState("")
-  const [limitAmount, setLimitAmount] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [limitAmount, setLimitAmount] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const loadAll = async () => {
     try {
@@ -28,31 +29,31 @@ function BudgetsSection() {
         fetch(`${API_BASE}/categories`, { headers: authHeaders() }),
         fetch(`${API_BASE}/budgets`, { headers: authHeaders() }),
         fetch(`${API_BASE}/report/insights`, { headers: authHeaders() }),
-      ])
+      ]);
 
-      const catsData = await catsRes.json()
-      const budgetsData = await budgetsRes.json()
-      const insightsData = await insightsRes.json()
+      const catsData = await catsRes.json();
+      const budgetsData = await budgetsRes.json();
+      const insightsData = await insightsRes.json();
 
-      setCategories(Array.isArray(catsData) ? catsData.filter(c => c.type === "expense") : [])
-      setBudgets(Array.isArray(budgetsData) ? budgetsData : [])
-      setInsights(insightsData)
+      setCategories(Array.isArray(catsData) ? catsData.filter(c => c.type === "expense") : []);
+      setBudgets(Array.isArray(budgetsData) ? budgetsData : []);
+      setInsights(insightsData);
     } catch (error) {
-      console.error("Ошибка загрузки данных бюджетов:", error)
+      console.error("Ошибка загрузки данных бюджетов:", error);
     }
-  }
+  };
 
   useEffect(() => {
-    loadAll()
-  }, [])
+    loadAll();
+  }, []);
 
   const handleCreateBudget = async () => {
     if (!selectedCategory || !limitAmount) {
-      alert(t("alert_fill_fields")) // Перевод alert
-      return
+      alert(t("alert_fill_fields"));
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
       const response = await fetch(`${API_BASE}/budgets`, {
         method: "POST",
@@ -61,59 +62,64 @@ function BudgetsSection() {
           category_id: parseInt(selectedCategory),
           monthly_limit: parseFloat(limitAmount),
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
-        setLimitAmount("")
-        setSelectedCategory("")
-        await loadAll()
+        setLimitAmount("");
+        setSelectedCategory("");
+        await loadAll();
       } else {
-        alert(data.detail || t("alert_save_error"))
+        alert(data.detail || t("alert_save_error"));
       }
     } catch (error) {
-      console.error("Ошибка создания бюджета:", error)
-      alert(t("alert_connection_error"))
+      console.error("Ошибка создания бюджета:", error);
+      alert(t("alert_connection_error"));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDeleteBudget = async (id) => {
     try {
       const response = await fetch(`${API_BASE}/budgets/${id}`, {
         method: "DELETE",
         headers: authHeaders(),
-      })
+      });
 
       if (response.ok) {
-        await loadAll()
+        await loadAll();
       } else {
-        const data = await response.json()
-        alert(data.detail || t("alert_delete_error"))
+        const data = await response.json();
+        alert(data.detail || t("alert_delete_error"));
       }
     } catch (error) {
-      console.error("Ошибка удаления бюджета:", error)
+      console.error("Ошибка удаления бюджета:", error);
     }
-  }
+  };
 
   const getBarColor = (percent) => {
-    if (percent >= 100) return "#ef4444"
-    if (percent >= 80) return "#f59e0b"
-    return "#22c55e"
-  }
+    if (percent >= 100) return "#ef4444";
+    if (percent >= 80) return "#f59e0b";
+    return "#22c55e";
+  };
+
+  // Безопасное форматирование системных и кастомных названий категорий
+  const formatCategoryName = (name) => {
+    if (!name) return t("transactions.no_category");
+    return name.startsWith("categories.") ? t(name, { ns: "translation" }) : name;
+  };
 
   return (
-    <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px", marginBottom: "20px" }}>
-      <h2 style={{ fontSize: "1.3rem", marginBottom: "20px" }}>{t("budgets_title")}</h2>
+    <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px", marginBottom: "20px", color: "white" }}>
+      <h2 style={{ fontSize: "1.3rem", marginBottom: "20px", marginTop: 0 }}>{t("budgets_title")}</h2>
 
       {/* --- Дневной лимит --- */}
       {insights && (
         <div style={{ backgroundColor: "#334155", padding: "16px", borderRadius: "10px", marginBottom: "20px" }}>
           {insights.daily_allowance !== null ? (
             <>
-              {/* Передаем переменную живых дней в JSON-перевод */}
               <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 4px 0" }}>
                 {t("daily_allowance_label", { days: insights.days_remaining })} 
               </p>
@@ -123,12 +129,14 @@ function BudgetsSection() {
                 margin: 0,
                 color: insights.daily_allowance < 0 ? "#ef4444" : "#3b82f6"
               }}>
-                {insights.daily_allowance.toFixed(0)} {t("per_day")}
+                {Number(insights.daily_allowance).toFixed(0)} {t("per_day")}
               </p>
             </>
           ) : (
             <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0 }}>
-              {t(insights.daily_allowance_note)}
+              {insights.daily_allowance_note?.startsWith("categories.") || insights.daily_allowance_note?.startsWith("insights.")
+                ? t(insights.daily_allowance_note)
+                : insights.daily_allowance_note}
             </p>
           )}
         </div>
@@ -139,11 +147,13 @@ function BudgetsSection() {
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
+          style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", flex: 1, minWidth: "160px" }}
         >
           <option value="">{t("select_category")}</option>
           {categories.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+            <option key={c.id} value={c.id}>
+              {formatCategoryName(c.name)}
+            </option>
           ))}
         </select>
 
@@ -152,7 +162,7 @@ function BudgetsSection() {
           placeholder={t("limit_placeholder")}
           value={limitAmount}
           onChange={(e) => setLimitAmount(e.target.value)}
-          style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", width: "150px" }}
+          style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", width: "130px" }}
         />
 
         <button
@@ -166,15 +176,15 @@ function BudgetsSection() {
 
       {/* --- Список бюджетов с прогресс-барами --- */}
       {budgets.length === 0 ? (
-        <p style={{ color: "#94a3b8", fontSize: "14px" }}>{t("no_budgets")}</p>
+        <p style={{ color: "#94a3b8", fontSize: "14px", textAlign: "center", margin: "20px 0" }}>{t("no_budgets")}</p>
       ) : (
         budgets.map(b => (
           <div key={b.id} style={{ backgroundColor: "#334155", padding: "14px", borderRadius: "10px", marginBottom: "12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-              <span style={{ fontWeight: "bold" }}>{t(b.category_name)}</span>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", alignItems: "center" }}>
+              <span style={{ fontWeight: "bold" }}>{formatCategoryName(b.category_name)}</span>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <span style={{ color: "#94a3b8", fontSize: "13px" }}>
-                  {b.spent.toFixed(0)} / {b.monthly_limit.toFixed(0)} ₺
+                  {Number(b.spent).toFixed(0)} / {Number(b.monthly_limit).toFixed(0)} ₺
                 </span>
                 <button
                   onClick={() => handleDeleteBudget(b.id)}
@@ -195,9 +205,8 @@ function BudgetsSection() {
                 }}
               />
             </div>
-            {/* Передаем процент использования прогресс-бара */}
             <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#94a3b8" }}>
-              {t("used_percent", { percent: b.percent_used.toFixed(0) })}
+              {t("used_percent", { percent: Number(b.percent_used).toFixed(0) })}
             </p>
           </div>
         ))
@@ -205,30 +214,33 @@ function BudgetsSection() {
 
       {/* --- Текстовые инсайты --- */}
       {insights && insights.insights && insights.insights.length > 0 && (
-        <div style={{ marginTop: "20px" }}>
-          <h3 style={{ fontSize: "1rem", marginBottom: "10px", color: "#e2e8f0" }}>{t("insights_subtitle")}</h3>
-          {insights.insights.map((item, idx) => (
-            <div
-              key={idx}
-              style={{
-                backgroundColor: "#334155",
-                padding: "10px 14px",
-                borderRadius: "8px",
-                marginBottom: "8px",
-                fontSize: "14px",
-                color: "#e2e8f0",
-              }}
-            >
-              {/* Если пришел объект с ключом и параметрами — переводим динамически */}
-              {item && typeof item === "object" && item.key 
-                ? t(item.key, item.params) 
-                : item}
-            </div>
-          ))}
+        <div style={{ marginTop: "20px", borderTop: "1px solid #334155", paddingTop: "15px" }}>
+          <h3 style={{ fontSize: "1rem", marginBottom: "10px", color: "#e2e8f0", marginTop: 0 }}>{t("insights_subtitle")}</h3>
+          {insights.insights.map((item, idx) => {
+            const isSystemKey = item && typeof item === "object" && item.key;
+            return (
+              <div
+                key={idx}
+                style={{
+                  backgroundColor: "#223147",
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  marginBottom: "8px",
+                  fontSize: "13px",
+                  color: "#cbd5e1",
+                  borderLeft: "4px solid #3b82f6"
+                }}
+              >
+                {isSystemKey 
+                  ? t(item.key, item.params) 
+                  : (typeof item === "string" && item.startsWith("insights.") ? t(item) : item)}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default BudgetsSection
+export default BudgetsSection;

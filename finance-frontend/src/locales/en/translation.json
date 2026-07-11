@@ -1,7 +1,4 @@
-{
-    
-  "loading": "Loading...",
-  "no_account": "Don't have an account?",
+{ 
   "register_link": "Register",
   "budgets_title": "Budgets & Insights",
   "daily_allowance_label": "Can be spent today ({{days}} days remaining in the month)",
@@ -70,13 +67,13 @@
    "forgot_password_title": "Forgot Password",
   "forgot_password_desc": "Enter the email address associated with your account, and we'll send you a password reset link.",
   "forgot_password_success": "If an account exists with this email address, a password reset link has been sent. Please check your inbox. It may take a few minutes to arrive.",
-  "back_to_login": "Back to Sign In",
-  "email_label": "Email Address",
-  "send_link_btn": "Send Reset Link",
+  
+  
+  
   "sending_btn": "Sending...",
   "alert_enter_email": "Please enter your email address.",
   "alert_send_error": "Unable to send the request.",
-  "alert_server_error": "Unable to connect to the server.",
+  
   "reset_pwd_title": "Reset Password",
   "reset_pwd_success": "Your password has been updated successfully. You can now sign in using your new password.",
   "reset_pwd_new_label": "New Password",
@@ -94,6 +91,38 @@
   "alert_pwd_mismatch": "The passwords do not match.",
   "alert_pwd_too_short": "Your password must be at least 6 characters long.",
   "alert_reset_failed": "Unable to reset your password. The link may have expired or is no longer valid.",
-  "alert_connection_error": "Unable to connect to the server."
+  "alert_connection_error": "Unable to connect to the server.",
+   "login_title": "Sign In",
+  "register_title": "Create Account",
+  "recovery_title": "Forgot Password",
+  "recovery_desc": "Enter the email address associated with your account, and we'll send you a password reset link.",
+
+  "username_label": "Username",
+  "email_label": "Email Address",
+  "password_label": "Password",
+
+  "forgot_password": "Forgot your password?",
+
+  "login_btn": "Sign In",
+  "register_btn": "Create Account",
+  "send_link_btn": "Send Reset Link",
+  "back_to_login": "Back to Sign In",
+
+  "no_account": "Don't have an account? Create one",
+  "have_account": "Already have an account? Sign In",
+
+  "loading": "Loading...",
+
+  "alert_fill_all": "Please fill in all required fields.",
+  "alert_fill_all_register": "Please enter your username, email address, and password.",
+  "alert_fill_email": "Please enter a valid email address.",
+
+  "alert_login_success": "Signed in successfully.",
+  "alert_register_success": "Your account has been created successfully.",
+  "alert_recovery_sent": "A password reset link has been sent to your email address.",
+
+  "alert_login_error": "Invalid username or password.",
+  "alert_register_error": "Unable to create your account. Please try again.",
+  "alert_server_error": "Unable to connect to the server."
   
 }

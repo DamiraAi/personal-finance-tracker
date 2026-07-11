@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import i18n from '../i18n';
 
 export default function Login() {
-  const { t, i18n } = useTranslation();
+  // Подключаем выделенный неймспейс "auth" для чистоты структуры локализации
+  const { t, i18n } = useTranslation("auth");
   const navigate = useNavigate();
 
-  // 1. Все необходимые стейты
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -16,19 +15,17 @@ export default function Login() {
   // Режимы экрана: "login" | "register" | "recovery"
   const [authMode, setAuthMode] = useState("login"); 
 
-  // Если токен уже есть, сразу уводим на дашборд
+  // Если токен уже есть, перенаправляем на панель управления
   useEffect(() => {
     if (localStorage.getItem("token")) {
       navigate("/dashboard");
     }
   }, [navigate]);
 
-  // Смена языка
   const changeLanguage = (lng) => {
     i18n.changeLanguage(lng);
   };
 
-  // Очистка полей при смене режима
   const switchMode = (mode) => {
     setAuthMode(mode);
     setEmail("");
@@ -38,9 +35,9 @@ export default function Login() {
 
   // Логика Входа
   const handleLogin = async (e) => {
-    if (e) e.preventDefault(); // Предотвращаем перезагрузку формы
+    if (e) e.preventDefault();
     if (!email || !password) {
-      alert(t("alert_fill_all") || "Пожалуйста, заполните все поля");
+      alert(t("alert_fill_all"));
       return;
     }
 
@@ -60,14 +57,14 @@ export default function Login() {
 
       if (response.ok && data.access_token) {
         localStorage.setItem("token", data.access_token);
-        alert(t("alert_login_success") || "Вход выполнен успешно!");
+        alert(t("alert_login_success"));
         navigate("/dashboard");
       } else {
-        alert(data.detail || t("alert_login_error") || "Неверный логин или пароль");
+        alert(data.detail || t("alert_login_error"));
       }
     } catch (error) {
       console.error("Ошибка при авторизации:", error);
-      alert(t("alert_server_error") || "Ошибка подключения к серверу");
+      alert(t("alert_server_error"));
     } finally {
       setLoading(false);
     }
@@ -77,7 +74,7 @@ export default function Login() {
   const handleRegister = async (e) => {
     if (e) e.preventDefault();
     if (!email || !password || !username) {
-      alert(t("alert_fill_all_register") || "Пожалуйста, заполните все поля, включая имя пользователя");
+      alert(t("alert_fill_all_register"));
       return;
     }
 
@@ -92,60 +89,60 @@ export default function Login() {
       const data = await response.json();
 
       if (response.ok) {
-        alert(t("alert_register_success") || "Регистрация успешна!");
-        switchMode("login"); // Возвращаем на вход
+        alert(t("alert_register_success"));
+        switchMode("login");
       } else {
-        alert(data.detail || t("alert_register_error") || "Ошибка при регистрации");
+        alert(data.detail || t("alert_register_error"));
       }
     } catch (error) {
       console.error("Ошибка при регистрации:", error);
-      alert(t("alert_server_error") || "Ошибка подключения к бэкенду");
+      alert(t("alert_server_error"));
     } finally {
       setLoading(false);
     }
   };
 
-  // Логика Восстановления (Заглушка)
+  // Логика Восстановления доступа
   const handleRecovery = async (e) => {
     e.preventDefault();
     if (!email) {
-      alert(t("alert_fill_email") || "Введите email");
+      alert(t("alert_fill_email"));
       return;
     }
-    // Здесь ваш fetch запрос на восстановление пароля...
-    alert(t("alert_recovery_sent") || "Ссылка отправлена!");
+    // Здесь будет ваш fetch запрос при необходимости бэкенда
+    alert(t("alert_recovery_sent"));
+    switchMode("login");
   };
 
   return (
     <div style={{ backgroundColor: "#0f172a", minHeight: "100vh", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Arial, sans-serif" }}>
       <div style={{ backgroundColor: "#1e293b", padding: "40px", borderRadius: "15px", maxWidth: "450px", width: "100%", margin: "20px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3)" }}>
         
-        {/* Шапка: Кнопки переключения языков */}
+        {/* Кнопки переключения языков */}
         <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginBottom: "20px" }}>
-          <button onClick={() => changeLanguage("ru")} style={langBtnStyle}>RU</button>
-          <button onClick={() => changeLanguage("tr")} style={langBtnStyle}>TR</button>
-          <button onClick={() => changeLanguage("en")} style={langBtnStyle}>EN</button>
+          <button onClick={() => changeLanguage("ru")} style={{ ...langBtnStyle, borderColor: i18n.language === "ru" ? "#3b82f6" : "#475569", color: i18n.language === "ru" ? "white" : "#94a3b8" }}>RU</button>
+          <button onClick={() => changeLanguage("tr")} style={{ ...langBtnStyle, borderColor: i18n.language === "tr" ? "#3b82f6" : "#475569", color: i18n.language === "tr" ? "white" : "#94a3b8" }}>TR</button>
         </div>
 
         {/* --- ЭКРАН ВОССТАНОВЛЕНИЯ ПАРОЛЯ --- */}
         {authMode === "recovery" && (
           <form onSubmit={handleRecovery}>
-            <h2 style={titleStyle}>{t("recovery_title", "Восстановление пароля")}</h2>
-            <p style={{ color: "#94a3b8", fontSize: "14px", marginBottom: "20px", textAlign: "center" }}>
-              {t("recovery_desc", "Введите ваш email для получения ссылки")}
+            <h2 style={titleStyle}>{t("recovery_title")}</h2>
+            <p style={{ color: "#94a3b8", fontSize: "14px", marginBottom: "20px", textAlign: "center", lineHeight: "1.5" }}>
+              {t("recovery_desc")}
             </p>
             
             <div style={{ marginBottom: "20px" }}>
-              <label style={labelStyle}>{t("email_label", "Email")}</label>
+              <label style={labelStyle}>{t("email_label")}</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} placeholder="example@mail.com" />
             </div>
 
             <button type="submit" disabled={loading} style={submitBtnStyle}>
-              {loading ? t("loading", "Загрузка...") : t("send_link_btn", "Отправить ссылку")}
+              {loading ? t("loading") : t("send_link_btn")}
             </button>
             
             <button type="button" onClick={() => switchMode("login")} style={linkBtnStyle}>
-              {t("back_to_login", "Назад к входу")}
+              {t("back_to_login")}
             </button>
           </form>
         )}
@@ -154,47 +151,47 @@ export default function Login() {
         {authMode !== "recovery" && (
           <form onSubmit={authMode === "login" ? handleLogin : handleRegister}>
             <h2 style={titleStyle}>
-              {authMode === "login" ? t("login_title", "Finance Login") : t("register_title", "Finance Registration")}
+              {authMode === "login" ? t("login_title") : t("register_title")}
             </h2>
 
-            {/* Имя пользователя (только для регистрации) */}
+            {/* Логин (только при регистрации) */}
             {authMode === "register" && (
               <div style={{ marginBottom: "15px" }}>
-                <label style={labelStyle}>{t("username_label", "Имя пользователя")}</label>
+                <label style={labelStyle}>{t("username_label")}</label>
                 <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required style={inputStyle} />
               </div>
             )}
 
             {/* Email */}
             <div style={{ marginBottom: "15px" }}>
-              <label style={labelStyle}>{t("email_label", "Email")}</label>
+              <label style={labelStyle}>{t("email_label")}</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} placeholder="example@mail.com" />
             </div>
 
             {/* Пароль */}
             <div style={{ marginBottom: "15px" }}>
-              <label style={labelStyle}>{t("password_label", "Пароль")}</label>
+              <label style={labelStyle}>{t("password_label")}</label>
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required style={inputStyle} placeholder="••••••••" />
             </div>
 
-            {/* Забыли пароль? (только для входа) */}
+            {/* Восстановление доступа */}
             {authMode === "login" && (
               <div style={{ textAlign: "right", marginBottom: "20px" }}>
                 <span onClick={() => switchMode("recovery")} style={{ color: "#60a5fa", fontSize: "13px", textDecoration: "underline", cursor: "pointer" }}>
-                  {t("forgot_password", "Забыли пароль?")}
+                  {t("forgot_password")}
                 </span>
               </div>
             )}
 
-            {/* Кнопка отправки формы */}
+            {/* Кнопка действия */}
             <button type="submit" disabled={loading} style={submitBtnStyle}>
-              {loading ? t("loading", "Загрузка...") : authMode === "login" ? t("login_btn", "Войти в систему") : t("register_btn", "Зарегистрироваться")}
+              {loading ? t("loading") : authMode === "login" ? t("login_btn") : t("register_btn")}
             </button>
 
-            {/* Переключатель Вход / Регистрация */}
+            {/* Переключатель режимов */}
             <div style={{ marginTop: "20px", textAlign: "center" }}>
               <span onClick={() => switchMode(authMode === "login" ? "register" : "login")} style={{ color: "#60a5fa", cursor: "pointer", fontSize: "14px", textDecoration: "underline" }}>
-                {authMode === "login" ? t("no_account", "Ещё нет аккаунта? Зарегистрироваться") : t("have_account", "Уже есть аккаунт? Войти")}
+                {authMode === "login" ? t("no_account") : t("have_account")}
               </span>
             </div>
           </form>
@@ -205,10 +202,10 @@ export default function Login() {
   );
 }
 
-// Повторяющиеся стили для чистоты кода
+// Константы стилизации для scannability и чистоты кода
 const inputStyle = { width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #475569", backgroundColor: "#334155", color: "white", boxSizing: "border-box", fontSize: "15px" };
 const labelStyle = { display: "block", marginBottom: "5px", color: "#94a3b8", fontSize: "14px" };
-const titleStyle = { textAlign: "center", marginBottom: "25px", fontSize: "24px", fontWeight: "600" };
-const langBtnStyle = { background: "none", border: "1px solid #475569", color: "#94a3b8", padding: "5px 10px", borderRadius: "5px", cursor: "pointer" };
+const titleStyle = { textAlign: "center", marginBottom: "25px", fontSize: "22px", fontWeight: "600", marginTop: 0 };
+const langBtnStyle = { background: "none", border: "1px solid #475569", padding: "5px 12px", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", fontSize: "12px" };
 const submitBtnStyle = { width: "100%", padding: "14px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", fontSize: "16px" };
 const linkBtnStyle = { width: "100%", padding: "10px", background: "none", border: "none", color: "#60a5fa", cursor: "pointer", fontSize: "14px", textDecoration: "underline", marginTop: "10px" };
