@@ -382,3 +382,5 @@ def get_insights(
         "income_this_month": income_this_month,
         "insights": insights,
     }
+
+ 

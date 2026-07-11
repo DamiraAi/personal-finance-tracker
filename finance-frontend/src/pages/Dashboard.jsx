@@ -25,7 +25,6 @@ function Dashboard() {
   const [wallets, setWallets] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [report, setReport] = useState(null);
-  const [reportData, setReportData] = useState({ income: [], expense: [] });
   const [categories, setCategories] = useState([]);
 
   const [debts, setDebts] = useState([]);
@@ -331,28 +330,6 @@ function Dashboard() {
     }
   };
 
-  const fetchReport = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth() + 1;
-      const response = await fetch(`${BASE_URL}/report?year=${year}&month=${month}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setReportData({
-          income: Array.isArray(data.income) ? data.income : [],
-          expense: Array.isArray(data.expense) ? data.expense : []
-        });
-      }
-    } catch (error) {
-      console.error("Ошибка при загрузке аналитики:", error);
-    }
-  };
-
   const getCategories = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -449,10 +426,6 @@ function Dashboard() {
   }, [period, startDate, endDate]);
 
   useEffect(() => {
-    fetchReport();
-  }, [transactions]);
-
-  useEffect(() => {
     getWallets();
     getCategories();
     fetchDebtsData();
@@ -483,8 +456,8 @@ function Dashboard() {
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"];
 
-  const monthlyExpenseData = Array.isArray(reportData?.expense) ? reportData.expense : [];
-  const monthlyIncomeData = Array.isArray(reportData?.income) ? reportData.income : [];
+  const monthlyExpenseData = Array.isArray(report?.expense) ? report.expense : [];
+  const monthlyIncomeData = Array.isArray(report?.income) ? report.income : [];
 
   const formatCategoryName = (name) => {
     if (!name) return t("transactions.no_category");
@@ -577,7 +550,7 @@ function Dashboard() {
           </div>
           <div style={{ backgroundColor: "#1e293b", padding: "25px", borderRadius: "15px", flex: 1, borderLeft: "5px solid #3b82f6" }}>
             <h3 style={{ color: "#94a3b8", margin: 0, fontSize: "0.9rem", textTransform: "uppercase" }}>{t("summary.balance")}</h3>
-            <h1 style={{ color: "#3b82f6", margin: "10px 0 0 0", fontSize: "2rem" }}>{report.net}</h1>
+            <h1 style={{ color: "#3b82f6", margin: "10px 0 0 0", fontSize: "2rem" }}>{report.current_balance}</h1>
           </div>
         </div>
       )}
@@ -620,13 +593,13 @@ function Dashboard() {
                     paddingAngle={5} 
                     dataKey="total_amount" 
                     nameKey="category_name"
-                    label={(entry) => formatCategoryName(entry.category_name)}
+                    label={(entry) => `${formatCategoryName(entry.category_name)}: ${(entry.percent * 100).toFixed(0)}%`}
                   >
                     {monthlyExpenseData.map((entry, index) => (
                       <Cell key={`expense-cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)} ₺`, formatCategoryName(name)]} />
+                  <Tooltip formatter={(value, name, props) => [`${Number(value).toFixed(2)} ₺ (${(props.payload.percent * 100).toFixed(0)}%)`, formatCategoryName(name)]} />
                   <Legend formatter={(value) => formatCategoryName(value)} />
                 </PieChart>
               </ResponsiveContainer>
@@ -651,13 +624,13 @@ function Dashboard() {
                     paddingAngle={5} 
                     dataKey="total_amount" 
                     nameKey="category_name"
-                    label={(entry) => formatCategoryName(entry.category_name)}
+                    label={(entry) => `${formatCategoryName(entry.category_name)}: ${(entry.percent * 100).toFixed(0)}%`}
                   >
                     {monthlyIncomeData.map((entry, index) => (
                       <Cell key={`income-cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)} ₺`, formatCategoryName(name)]} />
+                  <Tooltip formatter={(value, name, props) => [`${Number(value).toFixed(2)} ₺ (${(props.payload.percent * 100).toFixed(0)}%)`, formatCategoryName(name)]} />
                   <Legend formatter={(value) => formatCategoryName(value)} />
                 </PieChart>
               </ResponsiveContainer>
