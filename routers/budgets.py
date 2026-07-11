@@ -31,13 +31,14 @@ def create_or_update_budget(
         models.Category.user_id == current_user.id,
     ).first()
 
+    # Меняем текст ошибки на ключ для локализации
     if category is None:
-        raise HTTPException(status_code=404, detail="Категория не найдена")
+        raise HTTPException(status_code=404, detail="category_not_found")
 
     if category.type != models.CategoryType.expense:
         raise HTTPException(
             status_code=400,
-            detail="Бюджет можно задать только для категории расходов",
+            detail="budget_only_for_expenses",
         )
 
     # Если бюджет для этой категории уже есть — обновляем лимит, а не дублируем
@@ -94,12 +95,13 @@ def delete_budget(
         models.Budget.user_id == current_user.id,
     ).first()
 
+    # Меняем текст ошибки на ключ для локализации
     if budget is None:
-        raise HTTPException(status_code=404, detail="Бюджет не найден")
+        raise HTTPException(status_code=404, detail="budget_not_found")
 
     db.delete(budget)
     db.commit()
-    return {"message": "Бюджет удалён"}
+    return {"message": "budget_deleted"}
 
 
 def _build_budget_out(db: Session, budget: models.Budget, category: models.Category) -> schemas.BudgetOut:
@@ -126,7 +128,8 @@ def _build_budget_out(db: Session, budget: models.Budget, category: models.Categ
     return schemas.BudgetOut(
         id=budget.id,
         category_id=budget.category_id,
-        category_name=category.name if category else "Без категории",
+        # ИСХОДНАЯ ОШИБКА ЗДЕСЬ: заменяем "Без категории" на ключ "no_category"
+        category_name=category.name if category else "no_category",
         monthly_limit=budget.monthly_limit,
         spent=spent,
         remaining=remaining,

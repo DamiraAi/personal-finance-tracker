@@ -171,7 +171,7 @@ function BudgetsSection() {
         budgets.map(b => (
           <div key={b.id} style={{ backgroundColor: "#334155", padding: "14px", borderRadius: "10px", marginBottom: "12px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-              <span style={{ fontWeight: "bold" }}>{b.category_name}</span>
+              <span style={{ fontWeight: "bold" }}>{t(b.category_name)}</span>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <span style={{ color: "#94a3b8", fontSize: "13px" }}>
                   {b.spent.toFixed(0)} / {b.monthly_limit.toFixed(0)} ₺
