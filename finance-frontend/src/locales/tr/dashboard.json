@@ -94,11 +94,10 @@
     "income": "Gelir",
     "expense": "Gider",
     "transfer": "Transfer",
-
-    "loan_given": "Borç Verdim",
-    "loan_taken": "Borç Aldım",
-    "loan_repaid_to_us": "Bana Borç Ödendi",
-    "loan_repaid_by_us": "Borcumu Ödedim",
+    "loan_given": "Borç Verildi",
+    "loan_taken": "Borç Alındı",
+    "loan_repaid_to_us": "Borç Tahsil Edildi",
+    "loan_repaid_by_us": "Borç Ödendi",
 
     "create": "İşlem Oluştur",
 

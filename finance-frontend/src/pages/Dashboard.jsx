@@ -211,7 +211,6 @@ function Dashboard() {
     const token = localStorage.getItem("token");
     
     if (editingWalletId) {
-      // --- РЕЖИМ РЕДАКТИРОВАНИЯ (PUT) ---
       const response = await fetch(`${BASE_URL}/wallets/${editingWalletId}`, {
         method: "PUT",
         headers: {
@@ -233,7 +232,6 @@ function Dashboard() {
         showNotification(t("notifications.wallet_error"), "error");
       }
     } else {
-      // --- РЕЖИМ СОЗДАНИЯ (POST) ---
       const response = await fetch(`${BASE_URL}/wallets`, {
         method: "POST",
         headers: {
@@ -509,6 +507,12 @@ function Dashboard() {
   const monthlyExpenseData = Array.isArray(reportData?.expense) ? reportData.expense : [];
   const monthlyIncomeData = Array.isArray(reportData?.income) ? reportData.income : [];
 
+  // Функция для форматирования имени категории в графиках на выбранном языке
+  const formatCategoryName = (name) => {
+    if (!name) return t("transactions.no_category");
+    return name.startsWith("categories.") ? t(name, { ns: "translation" }) : name;
+  };
+
   const getTypeColor = (txType) => {
     if (["income", "loan_taken", "loan_repaid_to_us"].includes(txType)) return "#22c55e";
     return "#ef4444";
@@ -622,13 +626,23 @@ function Dashboard() {
             <div style={{ width: "100%", height: 250 }}>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
-                  <Pie data={monthlyExpenseData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="total_amount" nameKey="category_name">
+                  <Pie 
+                    data={monthlyExpenseData} 
+                    cx="50%" 
+                    cy="50%" 
+                    innerRadius={60} 
+                    outerRadius={80} 
+                    paddingAngle={5} 
+                    dataKey="total_amount" 
+                    nameKey="category_name"
+                    label={(entry) => formatCategoryName(entry.category_name)}
+                  >
                     {monthlyExpenseData.map((entry, index) => (
                       <Cell key={`expense-cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => `${Number(value).toFixed(2)} ₺`} />
-                  <Legend />
+                  <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)} ₺`, formatCategoryName(name)]} />
+                  <Legend formatter={(value) => formatCategoryName(value)} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -643,13 +657,23 @@ function Dashboard() {
             <div style={{ width: "100%", height: 250 }}>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
-                  <Pie data={monthlyIncomeData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="total_amount" nameKey="category_name">
+                  <Pie 
+                    data={monthlyIncomeData} 
+                    cx="50%" 
+                    cy="50%" 
+                    innerRadius={60} 
+                    outerRadius={80} 
+                    paddingAngle={5} 
+                    dataKey="total_amount" 
+                    nameKey="category_name"
+                    label={(entry) => formatCategoryName(entry.category_name)}
+                  >
                     {monthlyIncomeData.map((entry, index) => (
                       <Cell key={`income-cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => `${Number(value).toFixed(2)} ₺`} />
-                  <Legend />
+                  <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)} ₺`, formatCategoryName(name)]} />
+                  <Legend formatter={(value) => formatCategoryName(value)} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -719,8 +743,8 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* ФОРМЫ */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "30px" }}>
+      {/* ФОРМЫ (Исправлена сетка на 2 колонки) */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "30px" }}>
         
         {/* КОШЕЛЕК */}
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px", border: editingWalletId ? "2px solid #3b82f6" : "none" }}>
@@ -820,9 +844,19 @@ function Dashboard() {
               <div style={{ display: "flex", gap: "10px" }}>
                 <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} style={{ flex: 1, padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}>
                   <option value="">{t("category.select")} ({t("category.optional")})</option>
-                  {categories.filter(cat => !cat.type || cat.type === type).map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
+                  {categories
+                    .filter(cat => !cat.type || cat.type === type)
+                    .map(cat => {
+                      const displayName = cat.name.startsWith("categories.") 
+                        ? t(cat.name, { ns: "translation" }) 
+                        : cat.name;
+
+                      return (
+                        <option key={cat.id} value={cat.id}>
+                          {displayName}
+                        </option>
+                      );
+                  })}
                 </select>
                 <button type="button" onClick={() => setShowNewCategoryForm(!showNewCategoryForm)} style={{ padding: "0 15px", borderRadius: "8px", backgroundColor: "#10b981", color: "white", border: "none", cursor: "pointer", fontSize: "1.2rem", fontWeight: "bold" }}>+</button>
               </div>
@@ -851,28 +885,31 @@ function Dashboard() {
       {/* ТАБЛИЦЫ СПИСКОВ */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "20px" }}>
         
-        {/* КОШЕЛЬКИ */}
-        <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px" }}>
-          <h2 style={{ fontSize: "1.3rem", marginBottom: "20px" }}>{t("wallet.title")} ({wallets.length})</h2>
-          {wallets.map((wallet) => (
-            <div key={wallet.id} style={{ backgroundColor: "#334155", padding: "15px", borderRadius: "12px", marginBottom: "15px", border: editingWalletId === wallet.id ? "1px dashed #3b82f6" : "none" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h3 style={{ margin: "0 0 5px 0", color: "#f8fafc" }}>{wallet.name}</h3>
-                  <p style={{ margin: "5px 0", fontSize: "1.1rem" }}>{t("wallet.balance")}: <strong>{wallet.balance} {wallet.currency}</strong></p>
-                  <p style={{ margin: "5px 0", fontSize: "12px", color: "#94a3b8" }}>ID: {wallet.id}</p>
+        {/* ЛЕВАЯ КОЛОНКА (Кошельки + Бюджеты) */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {/* КОШЕЛЬКИ */}
+          <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px" }}>
+            <h2 style={{ fontSize: "1.3rem", marginBottom: "20px" }}>{t("wallet.title")} ({wallets.length})</h2>
+            {wallets.map((wallet) => (
+              <div key={wallet.id} style={{ backgroundColor: "#334155", padding: "15px", borderRadius: "12px", marginBottom: "15px", border: editingWalletId === wallet.id ? "1px dashed #3b82f6" : "none" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h3 style={{ margin: "0 0 5px 0", color: "#f8fafc" }}>{wallet.name}</h3>
+                    <p style={{ margin: "5px 0", fontSize: "1.1rem" }}>{t("wallet.balance")}: <strong>{wallet.balance} {wallet.currency}</strong></p>
+                    <p style={{ margin: "5px 0", fontSize: "12px", color: "#94a3b8" }}>ID: {wallet.id}</p>
+                  </div>
+                  <button onClick={() => startEditingWallet(wallet)} style={{ padding: "8px 14px", backgroundColor: editingWalletId === wallet.id ? "#64748b" : "#3b82f6", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }} disabled={editingWalletId === wallet.id}>
+                    {editingWalletId === wallet.id ? t("wallet.editing") : t("wallet.edit")}
+                  </button>
                 </div>
-                <button onClick={() => startEditingWallet(wallet)} style={{ padding: "8px 14px", backgroundColor: editingWalletId === wallet.id ? "#64748b" : "#3b82f6", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }} disabled={editingWalletId === wallet.id}>
-                  {editingWalletId === wallet.id ? t("wallet.editing") : t("wallet.edit")}
-                </button>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          
+          <BudgetsSection />
         </div>
-        
-        <BudgetsSection />
 
-        {/* ИСТОРИЯ ТРАНЗАКЦИЙ */}
+        {/* ПРАВАЯ КОЛОНКА (ИСТОРИЯ ТРАНЗАКЦИЙ) */}
         <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px" }}>
           <h2 style={{ fontSize: "1.3rem", marginBottom: "20px" }}>{t("transactions.title")}</h2>
 
@@ -892,7 +929,10 @@ function Dashboard() {
 
             <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}>
               <option value="all">{t("transactions.all_categories")}</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {categories.map(c => {
+                const categoryFilterName = c.name.startsWith("categories.") ? t(c.name) : c.name;
+                return <option key={c.id} value={c.id}>{categoryFilterName}</option>;
+              })}
             </select>
           </div>
 
@@ -901,8 +941,15 @@ function Dashboard() {
           ) : (
             currentTransactions.map((transaction) => {
               const txId = transaction.id || transaction.transaction_id;
-              const matchedCategory = categories.find(c => c.id === transaction.category_id);
-              const categoryName = matchedCategory ? matchedCategory.name : t("transactions.no_category");
+              
+              // ИСПРАВЛЕНО: Объявление переменной матчинга категорий во избежание падения приложения
+              const matchedCategory = categories.find(c => String(c.id) === String(transaction.category_id));
+              
+              const categoryName = matchedCategory 
+                ? (matchedCategory.name.startsWith("categories.") 
+                  ? t(matchedCategory.name, { ns: "translation" }) 
+                  : matchedCategory.name)
+                : t("transactions.no_category");
               
               return (
                 <div key={txId} style={{ backgroundColor: "#334155", padding: "15px", borderRadius: "12px", marginBottom: "15px" }}>
@@ -923,7 +970,10 @@ function Dashboard() {
 
                       <select value={editTxCategoryId} onChange={(e) => setEditTxCategoryId(e.target.value)} style={{ padding: "8px", borderRadius: "6px", backgroundColor: "#1e293b", color: "white", border: "1px solid #475569", marginRight: "10px", marginBottom: "10px" }}>
                         <option value="">{t("transactions.no_category")}</option>
-                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {categories.map(c => {
+                          const editCategoryName = c.name.startsWith("categories.") ? t(c.name) : c.name;
+                          return <option key={c.id} value={c.id}>{editCategoryName}</option>;
+                        })}
                       </select>
                       <br />
 

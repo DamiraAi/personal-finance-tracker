@@ -94,11 +94,10 @@
     "income": "Income",
     "expense": "Expense",
     "transfer": "Transfer",
-
     "loan_given": "Money Lent",
     "loan_taken": "Money Borrowed",
-    "loan_repaid_to_us": "Loan Repaid to Me",
-    "loan_repaid_by_us": "Loan Repaid by Me",
+    "loan_repaid_to_us": "Debt Repaid",
+    "loan_repaid_by_us": "Debt Paid",
 
     "create": "Create Transaction",
 

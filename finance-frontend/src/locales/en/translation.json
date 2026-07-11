@@ -49,6 +49,30 @@
     "gifts_income": "Gifts / Rewards",
     "cashback": "Cashback & Bonuses",
     "other_income": "Other Income"
-  }
+  },
+  "uncategorized": "Uncategorized",
+   "invalid_date": "Invalid date format. Please use YYYY-MM-DD.",
+
+  "no_category": "Uncategorized",
+  "debts_loans": "Debts & Loans",
+
+  "income": "Income",
+  "expense": "Expenses",
+  "balance": "Balance",
+
+  "budget_exceeded": "Budget exceeded for \"{{category}}\": {{spent}} spent out of {{limit}}",
+
+  "budget_used": "{{percent}}% of the budget has been used for \"{{category}}\"",
+
+  "expenses_exceed_income": "Expenses exceed income this month",
+
+  "top_category": "Highest spending this month: \"{{category}}\" ({{amount}})",
+
+  "expense_growing": "Spending on \"{{category}}\" increased by {{percent}}% compared to last month.",
+  "budget_already_exceeded": "The budget has already been exceeded this month",
+
+  "set_budget": "Create at least one category budget to see your daily spending limit",
+
+  "not_enough_data": "Not enough data for analysis yet. Add more transactions."
   
 }

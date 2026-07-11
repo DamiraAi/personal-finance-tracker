@@ -49,5 +49,30 @@
     "gifts_income": "Hediyeler / Ödüller",
     "cashback": "Nakit İade & Bonuslar",
     "other_income": "Diğer Gelirler"
-  }
+  },
+  "uncategorized": "Kategorisiz",
+  "invalid_date": "Geçersiz tarih formatı. Lütfen YYYY-AA-GG biçimini kullanın.",
+
+  "no_category": "Kategorisiz",
+  "debts_loans": "Borçlar ve Alacaklar",
+
+  "income": "Gelir",
+  "expense": "Gider",
+  "balance": "Bakiye",
+
+  "budget_exceeded": "\"{{category}}\" kategorisi için bütçe aşıldı: {{limit}} ₺ bütçenin {{spent}} ₺'si harcandı.",
+
+  "budget_used": "\"{{category}}\" kategorisi bütçesinin %{{percent}}'i kullanıldı.",
+
+  "expenses_exceed_income": "Bu ay giderler gelirlerden fazla.",
+
+  "top_category": "Bu ay en fazla harcama \"{{category}}\" kategorisinde yapıldı: {{amount}}",
+
+  "expense_growing": "\"{{category}}\" harcamalarınız geçen aya göre %{{percent}} arttı.",
+  
+  "budget_already_exceeded": "Bu ay bütçe zaten aşıldı.",
+
+  "set_budget": "Günlük harcama limitini görmek için en az bir kategori bütçesi oluşturun.",
+
+  "not_enough_data": "Analiz için henüz yeterli veri yok. Daha fazla işlem ekleyin."
 }

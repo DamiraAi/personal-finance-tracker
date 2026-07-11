@@ -128,7 +128,7 @@ function BudgetsSection() {
             </>
           ) : (
             <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0 }}>
-              {insights.daily_allowance_note}
+              {t(insights.daily_allowance_note)}
             </p>
           )}
         </div>
@@ -207,7 +207,7 @@ function BudgetsSection() {
       {insights && insights.insights && insights.insights.length > 0 && (
         <div style={{ marginTop: "20px" }}>
           <h3 style={{ fontSize: "1rem", marginBottom: "10px", color: "#e2e8f0" }}>{t("insights_subtitle")}</h3>
-          {insights.insights.map((text, idx) => (
+          {insights.insights.map((item, idx) => (
             <div
               key={idx}
               style={{
@@ -219,7 +219,10 @@ function BudgetsSection() {
                 color: "#e2e8f0",
               }}
             >
-              {text}
+              {/* Если пришел объект с ключом и параметрами — переводим динамически */}
+              {item && typeof item === "object" && item.key 
+                ? t(item.key, item.params) 
+                : item}
             </div>
           ))}
         </div>

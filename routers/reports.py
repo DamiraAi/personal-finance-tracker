@@ -39,7 +39,7 @@ def get_report(
             start = datetime.strptime(start_date.strip(), "%Y-%m-%d")
             end = datetime.strptime(end_date.strip(), "%Y-%m-%d").replace(hour=23, minute=59, second=59)
         except ValueError:
-            raise HTTPException(status_code=400, detail="Неверный формат даты. Используйте ГГГГ-ММ-ДД")
+            raise HTTPException(status_code=400, detail="invalid_date")
     else:
         # Приводим период к нижнему регистру на случай "Month" / "Week"
         p = period.lower().strip() if period else "week"
@@ -111,19 +111,19 @@ def get_report(
         .group_by(Category.name)\
         .all()
     expense_list = [
-        {"category_name": name if name else "Без категории", "total_amount": float(total)}
+        {"category_name": name if name else "no_category", "total_amount": float(total)}
         for name, total in expense_by_categories
     ]
 
     income_list = [
-        {"category_name": name if name else "Без категории", "total_amount": float(total)}
+        {"category_name": name if name else "no_category", "total_amount": float(total)}
         for name, total in income_by_categories
     ]
 
 
     categories_data = []
     for name, total in expense_by_categories:
-        cat_name = name if name else "Долги / Кредиты"
+        cat_name = name if name else "debts_loans"
         categories_data.append({
             "name": cat_name,
             "value": float(total)
@@ -294,9 +294,9 @@ def get_insights(
         remaining_budget = total_budget - expense_this_month
         daily_allowance = round(remaining_budget / days_remaining, 2)
         if daily_allowance < 0:
-            daily_allowance_note = "Бюджет уже превышен в этом месяце"
+            daily_allowance_note = "budget_already_exceeded"
     else:
-        daily_allowance_note = "Задайте хотя бы один бюджет по категории, чтобы увидеть дневной лимит"
+        daily_allowance_note = "set_budget"
  
     # --- Генерация текстовых инсайтов на основе правил ---
     insights = []
@@ -310,13 +310,15 @@ def get_insights(
         if b.monthly_limit > 0:
             pct = (spent / b.monthly_limit) * 100
             if pct >= 100:
-                insights.append(
-                    f"⚠️ Бюджет по категории «{cat.name}» превышен: потрачено {spent:.0f} из {b.monthly_limit:.0f}"
-                )
+                insights.append({
+                    "key": "budget_exceeded",
+                    "params": {"category": cat.name, "spent": int(spent), "limit": int(b.monthly_limit)}
+                })
             elif pct >= 80:
-                insights.append(
-                    f"Вы использовали {pct:.0f}% бюджета по категории «{cat.name}»"
-                )
+                insights.append({
+                    "key": "budget_used",
+                    "params": {"category": cat.name, "percent": int(pct)}
+                })
  
     # 2. Рост расходов по категориям по сравнению с прошлым месяцем
     for cat_name, amount in this_month_by_cat.items():
@@ -325,23 +327,31 @@ def get_insights(
         if prev_amount and prev_amount > 0:
             change_pct = ((amount - prev_amount) / prev_amount) * 100
             if change_pct >= 20:
-                insights.append(
-                    f"Траты на «{cat_name}» выросли на {change_pct:.0f}% по сравнению с прошлым месяцем"
-                )
+                insights.append({
+                    "key": "expense_growing",  # Используй этот ключ, если добавишь его в JSON
+                    "params": {"category": cat_name, "percent": int(change_pct)}
+                })
  
     # 3. Расходы превышают доходы
     if income_this_month > 0 and expense_this_month > income_this_month:
-        insights.append("Расходы в этом месяце превышают доходы")
+        insights.append({
+            "key": "expenses_exceed_income",
+            "params": {}
+        })
  
     # 4. Самая крупная категория расходов в этом месяце
     if this_month_by_cat:
         top_category, top_amount = max(this_month_by_cat.items(), key=lambda x: x[1])
-        insights.append(
-            f"Больше всего в этом месяце потрачено на «{top_category}»: {float(top_amount):.0f}"
-        )
+        insights.append({
+            "key": "top_category",
+            "params": {"category": top_category, "amount": int(top_amount)}
+        })
  
     if not insights:
-        insights.append("Пока недостаточно данных для инсайтов — добавьте больше транзакций")
+        insights.append({
+            "key": "not_enough_data",
+            "params": {}
+        })
  
     return {
         "days_remaining": days_remaining,
