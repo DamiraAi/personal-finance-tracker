@@ -1,96 +1,73 @@
 {
   "title": "Finans Paneli",
-  "subtitle": "Finansınızı ve hesaplarınızı tek bir yerden yönetin",
-
+  "subtitle": "Tüm finansınızı tek bir yerden yönetin",
+  "save_pdf": "PDF Olarak Dışa Aktar",
   "logout": "Çıkış Yap",
-  "save_pdf": "Raporu PDF Olarak Kaydet",
 
   "period": {
     "week": "Hafta",
     "month": "Ay",
     "year": "Yıl",
-    "custom": "Özel",
-    "from": "Başlangıç",
-    "to": "Bitiş"
+    "custom": "Özel Dönem",
+    "from": "Başlangıç Tarihi",
+    "to": "Bitiş Tarihi"
   },
 
   "summary": {
-    "income": "Toplam Gelir",
-    "expense": "Toplam Gider",
-    "balance": "Mevcut Bakiye"
+    "income": "Gelir",
+    "expense": "Gider",
+    "balance": "Bakiye"
   },
 
   "charts": {
-    "daily_trends": "Günlük Hareketler",
+    "daily_trends": "İşlem Geçmişi",
     "expense_analytics": "Gider Analizi",
     "income_analytics": "Gelir Analizi",
-    "no_expense_data": "Bu ay için gider verisi bulunmuyor.",
-    "no_income_data": "Bu ay için gelir verisi bulunmuyor."
+    "no_expense_data": "Seçilen dönem için gider kaydı bulunamadı.",
+    "no_income_data": "Seçilen dönem için gelir kaydı bulunamadı."
   },
 
   "debts": {
-    "title": "Borç ve Alacak Takibi",
+    "title": "Borçlar",
+    "contact_placeholder": "Kişi Adı",
     "add_contact": "Kişi Ekle",
-    "contact_name": "Kişi Adı",
-    "contact_placeholder": "Örneğin: Metehan",
-
     "they_owe": "Bana Borçlu",
     "we_owe": "Ben Borçluyum",
-
-    "debtors": "Borçlular",
-    "creditors": "Alacaklılar",
-
-    "all_paid": "Tüm borçlar kapatıldı!",
-    "nothing_owed": "Kimseye borcunuz bulunmuyor!",
-
-    "unknown_person": "Bilinmiyor",
+    "all_paid": "Aktif alacağınız bulunmuyor.",
+    "nothing_owed": "Kimseye borcunuz bulunmuyor.",
+    "unknown_person": "Bilinmeyen Kişi",
     "creditor": "Alacaklı",
-
     "remaining": "Kalan",
-    "from_amount": "/",
-
     "contact": "Kişi",
     "select_contact": "Kişi Seçin",
-    "no_contacts": "Henüz kişi eklenmemiş. Yeni bir kişi ekleyin.",
-
-    "select_debt": "Borç Seçin",
-    "repay_debt": "Hangi borcu ödemek istiyorsunuz?",
-    "no_active_debts": "Bu türde aktif borç bulunmuyor."
+    "no_contacts": "Henüz kişi eklenmedi.",
+    "repay_debt": "Borç Seçin",
+    "select_debt": "Ödenecek borcu seçin",
+    "no_active_debts": "Aktif borç bulunmuyor."
   },
 
   "wallet": {
     "title": "Cüzdanlar",
-
     "create": "Cüzdan Oluştur",
-    "update": "Cüzdanı Güncelle",
-
+    "update": "Cüzdanı Düzenle",
     "name": "Cüzdan Adı",
     "currency": "Para Birimi",
-
-    "select": "Cüzdan Seçin",
-
     "balance": "Bakiye",
-
     "edit": "Düzenle",
     "editing": "Düzenleniyor...",
     "cancel": "İptal",
-
     "source": "Gönderen Cüzdan",
     "destination": "Alıcı Cüzdan",
-
-    "select_source": "Gönderen Cüzdanı Seçin",
-    "select_destination": "Alıcı Cüzdanı Seçin"
+    "select_source": "Gönderen cüzdanı seçin",
+    "select_destination": "Alıcı cüzdanı seçin",
+    "select": "Cüzdan Seçin"
   },
 
   "transaction": {
-    "title": "İşlem Oluştur",
-
+    "title": "Yeni İşlem",
     "amount": "Tutar",
     "description": "Açıklama",
-    "date": "İşlem Tarihi",
-
-    "type": "İşlem Türü",
-
+    "without_description": "Açıklama Yok",
     "income": "Gelir",
     "expense": "Gider",
     "transfer": "Transfer",
@@ -98,84 +75,57 @@
     "loan_taken": "Borç Alındı",
     "loan_repaid_to_us": "Borç Tahsil Edildi",
     "loan_repaid_by_us": "Borç Ödendi",
-
-    "create": "İşlem Oluştur",
-
-    "without_description": "Açıklama Yok"
+    "date": "İşlem Tarihi",
+    "create": "İşlem Oluştur"
   },
 
   "category": {
     "title": "Kategori",
-
     "select": "Kategori Seçin",
     "optional": "İsteğe Bağlı",
-
-    "new": "Yeni Kategori",
-    "name": "Kategori Adı",
-    "placeholder": "Örneğin: Kripto Para",
-
+    "placeholder": "Kategori Adı",
     "save": "Kaydet",
     "cancel": "İptal"
   },
 
   "transactions": {
     "title": "İşlemler",
-
-    "search": "Açıklamada ara...",
-
-    "all_types": "Tüm Türler",
+    "search": "Ara...",
+    "all_types": "Tüm İşlemler",
     "all_categories": "Tüm Kategoriler",
-
-    "not_found": "İşlem bulunamadı veya cüzdan seçilmedi.",
-
+    "not_found": "İşlem bulunamadı.",
     "no_category": "Kategorisiz",
-
     "edit": "Düzenle",
     "delete": "Sil",
     "save": "Kaydet",
     "cancel": "İptal"
   },
 
-  "notifications": {
-    "wallet_required": "Lütfen bir cüzdan seçin.",
-    "invalid_amount": "Lütfen 0'dan büyük geçerli bir tutar girin.",
-    "amount_must_be_positive": "Tutar 0'dan büyük olmalıdır.",
-
-    "select_contact": "Lütfen bu işlem için bir kişi seçin.",
-    "select_debt": "Lütfen ödenecek borcu seçin.",
-
-    "transaction_created": "İşlem başarıyla oluşturuldu.",
-    "transaction_deleted": "İşlem başarıyla silindi.",
-    "transaction_updated": "İşlem başarıyla güncellendi.",
-    "transaction_error": "İşlem oluşturulamadı.",
-    "transaction_update_error": "İşlem güncellenemedi.",
-
-    "wallet_created": "Cüzdan başarıyla oluşturuldu.",
-    "wallet_updated": "Cüzdan başarıyla güncellendi.",
-    "wallet_error": "Cüzdan kaydedilemedi.",
-
-    "category_created": "Kategori başarıyla oluşturuldu.",
-    "category_error": "Kategori oluşturulamadı.",
-
-    "contact_created": "Kişi başarıyla eklendi.",
-    "contact_error": "Kişi eklenemedi.",
-
-    "network_error": "Ağ hatası.",
-
-    "fill_wallet_fields": "Lütfen tüm cüzdan bilgilerini doldurun.",
-    "wallet_not_found": "Hata: Cüzdan bulunamadı."
+  "common": {
+    "create": "Oluştur",
+    "update": "Güncelle"
   },
 
-  "common": {
-    "save": "Kaydet",
-    "cancel": "İptal",
-    "create": "Oluştur",
-    "update": "Güncelle",
-    "delete": "Sil",
-    "edit": "Düzenle",
-    "select": "Seç",
-    "loading": "Yükleniyor...",
-    "yes": "Evet",
-    "no": "Hayır"
+  "notifications": {
+    "wallet_required": "Lütfen bir cüzdan seçin.",
+    "invalid_amount": "Lütfen geçerli bir tutar girin.",
+    "select_contact": "Lütfen bir kişi seçin.",
+    "select_debt": "Lütfen bir borç seçin.",
+    "transaction_created": "İşlem başarıyla oluşturuldu.",
+    "transaction_error": "İşlem oluşturulamadı.",
+    "transaction_deleted": "İşlem silindi.",
+    "fill_wallet_fields": "Lütfen cüzdan adı ve para birimini girin.",
+    "wallet_updated": "Cüzdan güncellendi.",
+    "wallet_error": "Cüzdan kaydedilemedi.",
+    "wallet_created": "Cüzdan oluşturuldu.",
+    "wallet_not_found": "Cüzdan bulunamadı.",
+    "amount_must_be_positive": "Tutar sıfırdan büyük olmalıdır.",
+    "transaction_updated": "İşlem güncellendi.",
+    "transaction_update_error": "İşlem güncellenemedi.",
+    "category_created": "Kategori oluşturuldu.",
+    "category_error": "Kategori oluşturulamadı.",
+    "network_error": "Sunucuya bağlanılamadı.",
+    "contact_created": "Kişi eklendi.",
+    "contact_error": "Kişi eklenemedi."
   }
 }

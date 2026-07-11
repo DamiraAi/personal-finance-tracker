@@ -16,32 +16,27 @@ import {
 } from "recharts";
 import BudgetsSection from "../components/BudgetsSection";
 
-// Базовый URL живого сервера в интернете
 const BASE_URL = "https://finance-backend-tj8e.onrender.com";
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { t } = useTranslation("dashboard"); // Используем локаль dashboard
+  const { t, i18n } = useTranslation(["dashboard", "translation"]);
 
-  // Основные стейты данных
   const [wallets, setWallets] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [report, setReport] = useState(null);
   const [reportData, setReportData] = useState({ income: [], expense: [] });
   const [categories, setCategories] = useState([]);
 
-  // Стейты для долгов
   const [debts, setDebts] = useState([]);
   const [people, setPeople] = useState([]);
   const [newPersonName, setNewPersonName] = useState("");
 
-  // Стейты форм кошельков (используются и для создания, и для редактирования)
   const [walletName, setWalletName] = useState("");
   const [walletCurrency, setWalletCurrency] = useState("");
-  const [editingWalletId, setEditingWalletId] = useState(null); // null = создание, id = редактирование
+  const [editingWalletId, setEditingWalletId] = useState(null); 
   const [toWalletId, setToWalletId] = useState("");
 
-  // Стейты форм создания транзакций
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("income");
@@ -51,11 +46,9 @@ function Dashboard() {
   const [debtId, setDebtId] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Категории: имя и тип (расход/доход)
   const [newCategoryName, setNewCategoryName] = useState("");
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
 
-  // Стейты редактирования транзакции
   const [editingTxId, setEditingTxId] = useState(null);
   const [editTxAmount, setEditTxAmount] = useState("");
   const [editTxDescription, setEditTxDescription] = useState("");
@@ -63,21 +56,17 @@ function Dashboard() {
   const [editTxCategoryId, setEditTxCategoryId] = useState("");
   const [editTxWalletId, setEditTxWalletId] = useState("");
 
-  // Стейты фильтрации
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
 
-  // Стейты пагинации
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // Стейты периодов для графиков и отчетов
-  const [period, setPeriod] = useState("month"); // week, month, year, custom
+  const [period, setPeriod] = useState("month"); 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Стейт красивого уведомления (Toast)
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
 
   const showNotification = (message, type = "success") => {
@@ -90,7 +79,6 @@ function Dashboard() {
     navigate("/");
   };
 
-  // Получение кошельков
   const getWallets = async () => {
     const token = localStorage.getItem("token");
     const response = await fetch(`${BASE_URL}/wallets`, {
@@ -102,7 +90,6 @@ function Dashboard() {
     }
   };
 
-  // Получение транзакций конкретного кошелька
   const getTransactions = async (id) => {
     const currentId = id || walletId;
     if (!currentId) return;
@@ -117,7 +104,6 @@ function Dashboard() {
     }
   };
 
-  // Создание транзакции
   const createTransaction = async () => {
     const token = localStorage.getItem("token");
     const currentWalletId = Number(walletId);
@@ -183,7 +169,6 @@ function Dashboard() {
     }
   };
 
-  // Удаление транзакции
   const deleteTransaction = async (transactionId) => {
     const token = localStorage.getItem("token");
     const currentWalletId = Number(walletId);
@@ -201,7 +186,6 @@ function Dashboard() {
     }
   };
 
-  // Обработка кнопки кошелька (Создание или Обновление)
   const handleWalletSubmit = async () => {
     if (!walletName.trim() || !walletCurrency.trim()) {
       showNotification(t("notifications.fill_wallet_fields"), "error");
@@ -277,7 +261,6 @@ function Dashboard() {
     setEditTxWalletId(tx.wallet_id || walletId);
   };
 
-  // Изменение транзакции
   const updateTransaction = async (id) => {
     const token = localStorage.getItem("token");
     const currentWalletId = Number(editTxWalletId) || Number(walletId);
@@ -324,7 +307,6 @@ function Dashboard() {
     }
   };
 
-  // Получение аналитических отчетов по датам
   const getReport = async () => {
     const token = localStorage.getItem("token");
     let url = `${BASE_URL}/report`;
@@ -386,7 +368,6 @@ function Dashboard() {
     }
   };
 
-  // Создание категории
   const handleCreateCategory = async (e) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
@@ -422,7 +403,6 @@ function Dashboard() {
     }
   };
 
-  // Загрузка данных о долгах и людях
   const fetchDebtsData = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -440,7 +420,6 @@ function Dashboard() {
     }
   };
 
-  // Создание нового контакта для долга
   const handleCreatePerson = async (e) => {
     e.preventDefault();
     if (!newPersonName.trim()) return;
@@ -507,7 +486,6 @@ function Dashboard() {
   const monthlyExpenseData = Array.isArray(reportData?.expense) ? reportData.expense : [];
   const monthlyIncomeData = Array.isArray(reportData?.income) ? reportData.income : [];
 
-  // Функция для форматирования имени категории в графиках на выбранном языке
   const formatCategoryName = (name) => {
     if (!name) return t("transactions.no_category");
     return name.startsWith("categories.") ? t(name, { ns: "translation" }) : name;
@@ -517,6 +495,9 @@ function Dashboard() {
     if (["income", "loan_taken", "loan_repaid_to_us"].includes(txType)) return "#22c55e";
     return "#ef4444";
   };
+
+  // Определение системной локали для форматирования дат
+  const currentLocale = i18n.language && i18n.language.startsWith("tr") ? "tr-TR" : "ru-RU";
 
   return (
     <div style={{ backgroundColor: "#0f172a", minHeight: "100vh", color: "white", padding: "40px", fontFamily: "'Inter', sans-serif, Arial" }}>
@@ -743,7 +724,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* ФОРМЫ (Исправлена сетка на 2 колонки) */}
+      {/* ФОРМЫ */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "30px" }}>
         
         {/* КОШЕЛЕК */}
@@ -885,7 +866,7 @@ function Dashboard() {
       {/* ТАБЛИЦЫ СПИСКОВ */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "20px" }}>
         
-        {/* ЛЕВАЯ КОЛОНКА (Кошельки + Бюджеты) */}
+        {/* ЛЕВАЯ КОЛОНКА */}
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {/* КОШЕЛЬКИ */}
           <div style={{ backgroundColor: "#1e293b", padding: "20px", borderRadius: "15px" }}>
@@ -930,7 +911,7 @@ function Dashboard() {
             <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}>
               <option value="all">{t("transactions.all_categories")}</option>
               {categories.map(c => {
-                const categoryFilterName = c.name.startsWith("categories.") ? t(c.name) : c.name;
+                const categoryFilterName = c.name.startsWith("categories.") ? t(c.name, { ns: "translation" }) : c.name;
                 return <option key={c.id} value={c.id}>{categoryFilterName}</option>;
               })}
             </select>
@@ -942,7 +923,6 @@ function Dashboard() {
             currentTransactions.map((transaction) => {
               const txId = transaction.id || transaction.transaction_id;
               
-              // ИСПРАВЛЕНО: Объявление переменной матчинга категорий во избежание падения приложения
               const matchedCategory = categories.find(c => String(c.id) === String(transaction.category_id));
               
               const categoryName = matchedCategory 
@@ -971,7 +951,7 @@ function Dashboard() {
                       <select value={editTxCategoryId} onChange={(e) => setEditTxCategoryId(e.target.value)} style={{ padding: "8px", borderRadius: "6px", backgroundColor: "#1e293b", color: "white", border: "1px solid #475569", marginRight: "10px", marginBottom: "10px" }}>
                         <option value="">{t("transactions.no_category")}</option>
                         {categories.map(c => {
-                          const editCategoryName = c.name.startsWith("categories.") ? t(c.name) : c.name;
+                          const editCategoryName = c.name.startsWith("categories.") ? t(c.name, { ns: "translation" }) : c.name;
                           return <option key={c.id} value={c.id}>{editCategoryName}</option>;
                         })}
                       </select>
@@ -991,14 +971,14 @@ function Dashboard() {
                         <p style={{ margin: "5px 0 0 0", color: "#e2e8f0" }}>{transaction.description || t("transaction.without_description")}</p>
                         <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: "12px" }}>
                           {transaction.date
-                            ? new Date(transaction.date).toLocaleString("ru-RU", {
+                            ? new Date(transaction.date).toLocaleString(currentLocale, {
                               day: "2-digit",
                               month: "2-digit",
                               year: "numeric",
                               hour: "2-digit",
                               minute: "2-digit",
                           })
-                          : "Дата неизвестна"}
+                          : ""}
                         </p>
                       </div>
                       <div style={{ display: "flex", gap: "5px" }}>
