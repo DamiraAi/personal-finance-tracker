@@ -7,7 +7,7 @@ import calendar
 from models import Budget, CategoryType
 
 from database import get_db
-from models import Transaction, Category, User, TransactionType
+from models import Transaction, Category, User, TransactionType, Wallet
 from auth import get_current_user
 
 router = APIRouter(prefix="/report", tags=["Reports"])
@@ -22,6 +22,7 @@ def get_report(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # 1. Логика фильтрации дат
     # 1. Логика фильтрации дат (с защитой от пустых строк с фронтенда)
     now = datetime.utcnow()
     
@@ -44,14 +45,11 @@ def get_report(
         p = period.lower().strip() if period else "week"
         
         end = now
-        
-        # >>> ИСПРАВЛЕНО: Расширена поддержка языков для периодов, 
-        # чтобы бэкенд не сбоил при отправке 'week'/'month'/'year' на турецком или английском
-        if p in ["week", "неделя", "hafta"]:
+        if p in ["week", "неделя"]:
             start = now - timedelta(days=7)
-        elif p in ["month", "месяц", "ay"]:
+        elif p in ["month", "месяц"]:
             start = now - timedelta(days=30)
-        elif p in ["year", "год", "yıl"]:
+        elif p in ["year", "год"]:
             start = now - timedelta(days=365)
         else:
             start = now - timedelta(days=7)
@@ -68,6 +66,8 @@ def get_report(
         TransactionType.loan_given, 
         TransactionType.loan_repaid_by_us
     ]
+
+    
 
     # 3. Считаем общий приток денег (Total Income)
     total_income = db.query(func.sum(Transaction.amount))\
@@ -99,7 +99,6 @@ def get_report(
         )\
         .group_by(Category.name)\
         .all()
-        
     income_by_categories = db.query(Category.name, func.sum(Transaction.amount))\
         .select_from(Transaction)\
         .join(Category, Transaction.category_id == Category.id, isouter=True)\
@@ -111,7 +110,6 @@ def get_report(
         )\
         .group_by(Category.name)\
         .all()
-        
     expense_list = [
         {"category_name": name if name else "no_category", "total_amount": float(total)}
         for name, total in expense_by_categories
@@ -121,6 +119,7 @@ def get_report(
         {"category_name": name if name else "no_category", "total_amount": float(total)}
         for name, total in income_by_categories
     ]
+
 
     categories_data = []
     for name, total in expense_by_categories:
@@ -153,6 +152,7 @@ def get_report(
     trends_dict = {}
     
     for date_val, amount in income_by_day:
+        # Безопасное приведение к строке формата YYYY-MM-DD
         date_str = date_val.strftime("%Y-%m-%d") if hasattr(date_val, 'strftime') else str(date_val)
         trends_dict[date_str] = {"date": date_str, "Income": float(amount), "Expense": 0.0}
         
@@ -164,31 +164,32 @@ def get_report(
             trends_dict[date_str] = {"date": date_str, "Income": 0.0, "Expense": float(amount)}
 
     # =================================================================
-    # >>> ИСПРАВЛЕНО: Вычисляем входящий остаток в кошельке ДО даты start,
-    # чтобы баланс не сбрасывался в 0 при выборе недели/месяца/года
+    # ИСПРАВЛЕНИЕ v2: Опираемся на РЕАЛЬНЫЙ баланс кошельков (Wallet.balance),
+    # а не пересчитываем его заново по датам транзакций.
+    #
+    # Раньше opening_balance считался как сумма транзакций ДО даты start —
+    # это ломается, если у части транзакций дата записана в другом часовом
+    # поясе (например, локальное время вместо UTC) и транзакция "выпадает"
+    # за пределы окна фильтрации, хотя Wallet.balance уже обновлён верно.
+    #
+    # Теперь берём точку опоры — реальный текущий баланс всех кошельков
+    # пользователя (он всегда актуален, т.к. обновляется в transactions.py
+    # при каждой операции независимо от поля date) — и отталкиваемся от неё
+    # назад, вычитая чистый доход/расход за выбранный период.
     # =================================================================
-    previous_income = db.query(func.sum(Transaction.amount))\
-        .filter(
-            Transaction.user_id == current_user.id,
-            Transaction.type.in_(incoming_types),
-            Transaction.date < start  # Строго до начала выбранного периода
-        ).scalar() or 0.0
+    real_current_balance = db.query(func.sum(Wallet.balance))\
+        .filter(Wallet.user_id == current_user.id).scalar() or 0.0
+    real_current_balance = float(real_current_balance)
 
-    previous_expense = db.query(func.sum(Transaction.amount))\
-        .filter(
-            Transaction.user_id == current_user.id,
-            Transaction.type.in_(outgoing_types),
-            Transaction.date < start  # Строго до начала выбранного периода
-        ).scalar() or 0.0
+    net_change_in_period = float(total_income) - float(total_expense)
 
-    # Стартуем расчет не с нуля, а с реального исторического остатка кошелька
-    opening_balance = round(float(previous_income) - float(previous_expense), 2)
+    # Баланс на начало периода = текущий реальный баланс минус то,
+    # что "накопилось" за сам период
+    opening_balance = round(real_current_balance - net_change_in_period, 2)
     # =================================================================
 
     sorted_dates = sorted(trends_dict.keys())
     daily_data = []
-    
-    # >>> ИСПРАВЛЕНО: Базовый баланс теперь равен входящему остатку на начало периода
     running_balance = opening_balance
 
     for date_str in sorted_dates:
@@ -213,8 +214,8 @@ def get_report(
         "total_income": float(total_income),
         "total_expense": float(total_expense),
         "net": float(total_income - total_expense),
-        # >>> ИСПРАВЛЕНО: Добавлено поле входящего остатка в ответ для фронтенда
         "opening_balance": round(opening_balance, 2),
+        "current_balance": round(real_current_balance, 2),
         "daily_data": daily_data,
         "categories_data": categories_data, 
         "income": income_list,      
@@ -268,6 +269,9 @@ def get_insights(
         Transaction.date <= current_end,
     ).scalar() or 0.0)
  
+    # --- Расходы по категориям в этом и прошлом месяце (для сравнения) ---
+    # Группируем по category_id, а не по name — имя может быть ключом перевода
+    # ("categories.food"), и нам ещё нужно достать это же имя для параметров.
     this_month_by_cat = {
         row.category_id: {"name": row.name, "amount": float(row.amount)}
         for row in db.query(
@@ -307,8 +311,9 @@ def get_insights(
     budgets = db.query(Budget).filter(Budget.user_id == current_user.id).all()
     total_budget = sum(b.monthly_limit for b in budgets)
  
+    # --- Прогноз "сколько можно тратить в день" ---
     daily_allowance = None
-    daily_allowance_note = None 
+    daily_allowance_note = None  # теперь это КЛЮЧ перевода, не готовая фраза
  
     if total_budget > 0:
         remaining_budget = total_budget - expense_this_month
@@ -318,6 +323,7 @@ def get_insights(
     else:
         daily_allowance_note = "set_budget"
  
+    # --- Генерация инсайтов: список {key, params} вместо готового текста ---
     insights = []
  
     for b in budgets:
