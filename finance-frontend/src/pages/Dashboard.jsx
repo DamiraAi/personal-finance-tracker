@@ -497,7 +497,11 @@ function Dashboard() {
   };
 
   // Определение системной локали для форматирования дат
-  const currentLocale = i18n.language && i18n.language.startsWith("tr") ? "tr-TR" : "ru-RU";
+  const currentLocale = i18n.language?.startsWith("tr")
+    ? "tr-TR"
+    : i18n.language?.startsWith("en")
+    ? "en-US"
+    : "ru-RU";
 
   return (
     <div style={{ backgroundColor: "#0f172a", minHeight: "100vh", color: "white", padding: "40px", fontFamily: "'Inter', sans-serif, Arial" }}>
