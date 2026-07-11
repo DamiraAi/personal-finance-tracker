@@ -1,7 +1,9 @@
 import { useState } from "react"
 import { useNavigate, useSearchParams, Link } from "react-router-dom"
+import { useTranslation } from "react-i18next" // Импортируем хук локализации
 
 function ResetPassword() {
+  const { t } = useTranslation() // Активируем функцию t()
   const [searchParams] = useSearchParams()
   const token = searchParams.get("token")
 
@@ -14,22 +16,22 @@ function ResetPassword() {
 
   const handleSubmit = async () => {
     if (!token) {
-      alert("Ссылка недействительна: отсутствует токен")
+      alert(t("alert_missing_token"))
       return
     }
 
     if (!newPassword || !confirmPassword) {
-      alert("Пожалуйста, заполните оба поля")
+      alert(t("alert_fill_all_fields"))
       return
     }
 
     if (newPassword !== confirmPassword) {
-      alert("Пароли не совпадают")
+      alert(t("alert_pwd_mismatch"))
       return
     }
 
     if (newPassword.length < 6) {
-      alert("Пароль должен содержать минимум 6 символов")
+      alert(t("alert_pwd_too_short"))
       return
     }
 
@@ -47,27 +49,27 @@ function ResetPassword() {
       if (response.ok) {
         setDone(true)
       } else {
-        alert(data.detail || "Не удалось сбросить пароль. Возможно, ссылка устарела.")
+        alert(data.detail ? t(data.detail) : t("alert_reset_failed"))
       }
     } catch (error) {
       console.error("Ошибка при сбросе пароля:", error)
-      alert("Ошибка подключения к серверу бэкенда")
+      alert(t("alert_connection_error"))
     } finally {
       setLoading(false)
     }
   }
 
-  // Если в ссылке вообще нет токена — сразу показываем ошибку, без формы
+  // Экран ошибки, если в ссылке отсутствует токен сессии
   if (!token) {
     return (
       <div style={{ backgroundColor: "#0f172a", minHeight: "100vh", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Arial, sans-serif" }}>
         <div style={{ backgroundColor: "#1e293b", padding: "40px", borderRadius: "15px", maxWidth: "450px", width: "100%", margin: "20px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3)", textAlign: "center" }}>
-          <h2 style={{ marginBottom: "15px", fontSize: "22px" }}>Ссылка недействительна</h2>
+          <h2 style={{ marginBottom: "15px", fontSize: "22px" }}>{t("reset_pwd_invalid_link")}</h2>
           <p style={{ color: "#94a3b8", fontSize: "14px", marginBottom: "20px" }}>
-            В ссылке отсутствует токен сброса пароля. Запросите восстановление пароля заново.
+            {t("reset_pwd_missing_token_desc")}
           </p>
           <Link to="/forgot-password" style={{ color: "#60a5fa", fontSize: "14px", textDecoration: "underline" }}>
-            Запросить сброс пароля
+            {t("reset_pwd_request_again_btn")}
           </Link>
         </div>
       </div>
@@ -79,25 +81,27 @@ function ResetPassword() {
       <div style={{ backgroundColor: "#1e293b", padding: "40px", borderRadius: "15px", maxWidth: "450px", width: "100%", margin: "20px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3)" }}>
 
         <h2 style={{ textAlign: "center", marginBottom: "25px", fontSize: "24px", fontWeight: "600" }}>
-          Новый пароль
+          {t("reset_pwd_title")}
         </h2>
 
         {done ? (
           <>
             <p style={{ color: "#94a3b8", fontSize: "14px", textAlign: "center", lineHeight: "1.6", marginBottom: "20px" }}>
-              Пароль успешно обновлён. Теперь можно войти с новым паролем.
+              {t("reset_pwd_success")}
             </p>
             <button
               onClick={() => navigate("/")}
               style={{ width: "100%", padding: "14px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", fontSize: "16px" }}
             >
-              Перейти ко входу
+              {t("reset_pwd_go_to_login")}
             </button>
           </>
         ) : (
           <>
             <div style={{ marginBottom: "15px" }}>
-              <label style={{ display: "block", marginBottom: "5px", color: "#94a3b8", fontSize: "14px" }}>Новый пароль</label>
+              <label style={{ display: "block", marginBottom: "5px", color: "#94a3b8", fontSize: "14px" }}>
+                {t("reset_pwd_new_label")}
+              </label>
               <input
                 type="password"
                 placeholder="••••••••"
@@ -108,7 +112,9 @@ function ResetPassword() {
             </div>
 
             <div style={{ marginBottom: "25px" }}>
-              <label style={{ display: "block", marginBottom: "5px", color: "#94a3b8", fontSize: "14px" }}>Повторите пароль</label>
+              <label style={{ display: "block", marginBottom: "5px", color: "#94a3b8", fontSize: "14px" }}>
+                {t("reset_pwd_confirm_label")}
+              </label>
               <input
                 type="password"
                 placeholder="••••••••"
@@ -123,7 +129,7 @@ function ResetPassword() {
               disabled={loading}
               style={{ width: "100%", padding: "14px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "8px", cursor: loading ? "default" : "pointer", fontWeight: "bold", fontSize: "16px", opacity: loading ? 0.7 : 1 }}
             >
-              {loading ? "Сохранение..." : "Сохранить новый пароль"}
+              {loading ? t("reset_pwd_saving") : t("reset_pwd_save_btn")}
             </button>
           </>
         )}

@@ -1,14 +1,5 @@
 {
-  "login_title": "Log In to App",
-  "email_label": "Email",
-  "password_label": "Password",
-  "forgot_password": "Forgot Password?",
-  "login_btn": "Log In",
-  "register_btn": "Register",
-  "recovery_title": "Password Recovery",
-  "recovery_desc": "Enter your Email, and we will send you a password reset link.",
-  "send_link_btn": "Send Link",
-  "back_to_login": "Back to Login",
+    
   "loading": "Loading...",
   "no_account": "Don't have an account?",
   "register_link": "Register",
@@ -26,7 +17,7 @@
   "alert_fill_fields": "Please select a category and specify a limit",
   "alert_save_error": "Failed to save budget",
   "alert_delete_error": "Failed to delete budget",
-  "alert_connection_error": "Server connection error",
+  
   "categories": {
     "food": "Groceries & Supermarkets",
     "cafe": "Cafes & Restaurants",
@@ -73,6 +64,36 @@
 
   "set_budget": "Create at least one category budget to see your daily spending limit",
 
-  "not_enough_data": "Not enough data for analysis yet. Add more transactions."
+  "not_enough_data": "Not enough data for analysis yet. Add more transactions.",
+
+
+   "forgot_password_title": "Forgot Password",
+  "forgot_password_desc": "Enter the email address associated with your account, and we'll send you a password reset link.",
+  "forgot_password_success": "If an account exists with this email address, a password reset link has been sent. Please check your inbox. It may take a few minutes to arrive.",
+  "back_to_login": "Back to Sign In",
+  "email_label": "Email Address",
+  "send_link_btn": "Send Reset Link",
+  "sending_btn": "Sending...",
+  "alert_enter_email": "Please enter your email address.",
+  "alert_send_error": "Unable to send the request.",
+  "alert_server_error": "Unable to connect to the server.",
+  "reset_pwd_title": "Reset Password",
+  "reset_pwd_success": "Your password has been updated successfully. You can now sign in using your new password.",
+  "reset_pwd_new_label": "New Password",
+  "reset_pwd_confirm_label": "Confirm New Password",
+  "reset_pwd_save_btn": "Update Password",
+  "reset_pwd_saving": "Updating...",
+  "reset_pwd_go_to_login": "Back to Sign In",
+
+  "reset_pwd_invalid_link": "Invalid Link",
+  "reset_pwd_missing_token_desc": "This password reset link is invalid or has expired. Please request a new password reset link.",
+  "reset_pwd_request_again_btn": "Request a New Password Reset Link",
+
+  "alert_missing_token": "Invalid or missing verification link.",
+  "alert_fill_all_fields": "Please fill in all required fields.",
+  "alert_pwd_mismatch": "The passwords do not match.",
+  "alert_pwd_too_short": "Your password must be at least 6 characters long.",
+  "alert_reset_failed": "Unable to reset your password. The link may have expired or is no longer valid.",
+  "alert_connection_error": "Unable to connect to the server."
   
 }

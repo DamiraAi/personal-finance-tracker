@@ -1,14 +1,5 @@
 {
-  "login_title": "Uygulamaya Giriş Yap",
-  "email_label": "E-posta",
-  "password_label": "Şifre",
-  "forgot_password": "Şifremi Unuttum?",
-  "login_btn": "Giriş Yap",
-  "register_btn": "Kayıt Ol",
-  "recovery_title": "Şifre Yenileme",
-  "recovery_desc": "E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.",
-  "send_link_btn": "Bağlantı Gönder",
-  "back_to_login": "Giriş Ekranına Dön",
+  
   "loading": "Yükleniyor...",
   "no_account": "Henüz hesabınız yok mu?",
   "register_link": "Kayıt Ol",
@@ -26,7 +17,7 @@
   "alert_fill_fields": "Lütfen kategori seçin ve limit belirtin",
   "alert_save_error": "Bütçe kaydedilemedi",
   "alert_delete_error": "Bütçe silinemedi",
-  "alert_connection_error": "Sunucu bağlantı hatası",
+ 
   "categories": {
     "food": "Market & Süpermarket",
     "cafe": "Kafe & Restoran",
@@ -74,5 +65,23 @@
 
   "set_budget": "Günlük harcama limitini görmek için en az bir kategori bütçesi oluşturun.",
 
-  "not_enough_data": "Analiz için henüz yeterli veri yok. Daha fazla işlem ekleyin."
+  "not_enough_data": "Analiz için henüz yeterli veri yok. Daha fazla işlem ekleyin.",
+  "reset_pwd_title": "Şifre Sıfırlama",
+  "reset_pwd_success": "Şifreniz başarıyla güncellendi. Artık yeni şifrenizle giriş yapabilirsiniz.",
+  "reset_pwd_new_label": "Yeni Şifre",
+  "reset_pwd_confirm_label": "Yeni Şifre (Tekrar)",
+  "reset_pwd_save_btn": "Şifreyi Güncelle",
+  "reset_pwd_saving": "Güncelleniyor...",
+  "reset_pwd_go_to_login": "Giriş Sayfasına Dön",
+
+  "reset_pwd_invalid_link": "Geçersiz Bağlantı",
+  "reset_pwd_missing_token_desc": "Şifre sıfırlama bağlantısı geçersiz veya eksik. Lütfen yeni bir şifre sıfırlama talebinde bulunun.",
+  "reset_pwd_request_again_btn": "Yeni Şifre Sıfırlama Bağlantısı Gönder",
+
+  "alert_missing_token": "Geçersiz veya eksik doğrulama bağlantısı.",
+  "alert_fill_all_fields": "Lütfen tüm zorunlu alanları doldurun.",
+  "alert_pwd_mismatch": "Şifreler birbiriyle eşleşmiyor.",
+  "alert_pwd_too_short": "Şifre en az 6 karakter uzunluğunda olmalıdır.",
+  "alert_reset_failed": "Şifre sıfırlanamadı. Bağlantının süresi dolmuş veya bağlantı geçersiz olabilir.",
+  "alert_connection_error": "Sunucuya bağlanılamadı."
 }
