@@ -33,6 +33,12 @@ i18n
   .init({
     resources,
     fallbackLng: 'ru', // Если язык пользователя не найден, включаем русский
+    // Обрезаем региональный код (например, "en-US" -> "en"),
+    // иначе i18next не найдёт наши ресурсы, зарегистрированные
+    // только под короткими кодами ru/en/tr
+    load: 'languageOnly',
+    supportedLngs: ['ru', 'en', 'tr'],
+    nonExplicitSupportedLngs: true,
     ns: ['translation', 'dashboard'], // Регистрируем оба пространства имен
     defaultNS: 'translation', // По умолчанию (например, для логина) используется translation
     interpolation: {

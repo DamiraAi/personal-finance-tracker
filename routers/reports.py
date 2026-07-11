@@ -22,7 +22,6 @@ def get_report(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # 1. Логика фильтрации дат
     # 1. Логика фильтрации дат (с защитой от пустых строк с фронтенда)
     now = datetime.utcnow()
     
@@ -45,11 +44,14 @@ def get_report(
         p = period.lower().strip() if period else "week"
         
         end = now
-        if p in ["week", "неделя"]:
+        
+        # >>> ИСПРАВЛЕНО: Расширена поддержка языков для периодов, 
+        # чтобы бэкенд не сбоил при отправке 'week'/'month'/'year' на турецком или английском
+        if p in ["week", "неделя", "hafta"]:
             start = now - timedelta(days=7)
-        elif p in ["month", "месяц"]:
+        elif p in ["month", "месяц", "ay"]:
             start = now - timedelta(days=30)
-        elif p in ["year", "год"]:
+        elif p in ["year", "год", "yıl"]:
             start = now - timedelta(days=365)
         else:
             start = now - timedelta(days=7)
@@ -66,8 +68,6 @@ def get_report(
         TransactionType.loan_given, 
         TransactionType.loan_repaid_by_us
     ]
-
-    
 
     # 3. Считаем общий приток денег (Total Income)
     total_income = db.query(func.sum(Transaction.amount))\
@@ -99,6 +99,7 @@ def get_report(
         )\
         .group_by(Category.name)\
         .all()
+        
     income_by_categories = db.query(Category.name, func.sum(Transaction.amount))\
         .select_from(Transaction)\
         .join(Category, Transaction.category_id == Category.id, isouter=True)\
@@ -110,6 +111,7 @@ def get_report(
         )\
         .group_by(Category.name)\
         .all()
+        
     expense_list = [
         {"category_name": name if name else "no_category", "total_amount": float(total)}
         for name, total in expense_by_categories
@@ -119,7 +121,6 @@ def get_report(
         {"category_name": name if name else "no_category", "total_amount": float(total)}
         for name, total in income_by_categories
     ]
-
 
     categories_data = []
     for name, total in expense_by_categories:
@@ -152,7 +153,6 @@ def get_report(
     trends_dict = {}
     
     for date_val, amount in income_by_day:
-        # Безопасное приведение к строке формата YYYY-MM-DD
         date_str = date_val.strftime("%Y-%m-%d") if hasattr(date_val, 'strftime') else str(date_val)
         trends_dict[date_str] = {"date": date_str, "Income": float(amount), "Expense": 0.0}
         
@@ -163,9 +163,33 @@ def get_report(
         else:
             trends_dict[date_str] = {"date": date_str, "Income": 0.0, "Expense": float(amount)}
 
+    # =================================================================
+    # >>> ИСПРАВЛЕНО: Вычисляем входящий остаток в кошельке ДО даты start,
+    # чтобы баланс не сбрасывался в 0 при выборе недели/месяца/года
+    # =================================================================
+    previous_income = db.query(func.sum(Transaction.amount))\
+        .filter(
+            Transaction.user_id == current_user.id,
+            Transaction.type.in_(incoming_types),
+            Transaction.date < start  # Строго до начала выбранного периода
+        ).scalar() or 0.0
+
+    previous_expense = db.query(func.sum(Transaction.amount))\
+        .filter(
+            Transaction.user_id == current_user.id,
+            Transaction.type.in_(outgoing_types),
+            Transaction.date < start  # Строго до начала выбранного периода
+        ).scalar() or 0.0
+
+    # Стартуем расчет не с нуля, а с реального исторического остатка кошелька
+    opening_balance = round(float(previous_income) - float(previous_expense), 2)
+    # =================================================================
+
     sorted_dates = sorted(trends_dict.keys())
     daily_data = []
-    running_balance = 0.0
+    
+    # >>> ИСПРАВЛЕНО: Базовый баланс теперь равен входящему остатку на начало периода
+    running_balance = opening_balance
 
     for date_str in sorted_dates:
         day_data = trends_dict[date_str]
@@ -181,14 +205,16 @@ def get_report(
 
     if not daily_data:
         daily_data = [
-            {"date": start.strftime("%Y-%m-%d"), "Expense": 0.0, "Income": 0.0, "Balance": 0.0},
-            {"date": end.strftime("%Y-%m-%d"), "Expense": 0.0, "Income": 0.0, "Balance": 0.0}
+            {"date": start.strftime("%Y-%m-%d"), "Expense": 0.0, "Income": 0.0, "Balance": round(opening_balance, 2)},
+            {"date": end.strftime("%Y-%m-%d"), "Expense": 0.0, "Income": 0.0, "Balance": round(opening_balance, 2)}
         ]
 
     return {
         "total_income": float(total_income),
         "total_expense": float(total_expense),
         "net": float(total_income - total_expense),
+        # >>> ИСПРАВЛЕНО: Добавлено поле входящего остатка в ответ для фронтенда
+        "opening_balance": round(opening_balance, 2),
         "daily_data": daily_data,
         "categories_data": categories_data, 
         "income": income_list,      
@@ -203,7 +229,6 @@ def get_insights(
 ):
     now = datetime.utcnow()
  
-    # --- Границы текущего и прошлого месяца ---
     current_start = datetime(now.year, now.month, 1)
     days_in_month = calendar.monthrange(now.year, now.month)[1]
     current_end = datetime(now.year, now.month, days_in_month, 23, 59, 59)
@@ -229,34 +254,27 @@ def get_insights(
         TransactionType.loan_repaid_to_us,
     ]
  
-    # --- Общие суммы за текущий и прошлый месяц ---
-    expense_this_month = db.query(func.sum(Transaction.amount)).filter(
+    expense_this_month = float(db.query(func.sum(Transaction.amount)).filter(
         Transaction.user_id == current_user.id,
         Transaction.type.in_(outgoing_types),
         Transaction.date >= current_start,
         Transaction.date <= current_end,
-    ).scalar() or 0.0
-    expense_this_month = float(expense_this_month)
+    ).scalar() or 0.0)
  
-    income_this_month = db.query(func.sum(Transaction.amount)).filter(
+    income_this_month = float(db.query(func.sum(Transaction.amount)).filter(
         Transaction.user_id == current_user.id,
         Transaction.type.in_(incoming_types),
         Transaction.date >= current_start,
         Transaction.date <= current_end,
-    ).scalar() or 0.0
-    income_this_month = float(income_this_month)
+    ).scalar() or 0.0)
  
-    expense_last_month = db.query(func.sum(Transaction.amount)).filter(
-        Transaction.user_id == current_user.id,
-        Transaction.type.in_(outgoing_types),
-        Transaction.date >= prev_start,
-        Transaction.date <= prev_end,
-    ).scalar() or 0.0
-    expense_last_month = float(expense_last_month)
- 
-    # --- Расходы по категориям в этом и прошлом месяце (для сравнения) ---
-    this_month_by_cat = dict(
-        db.query(Category.name, func.sum(Transaction.amount))
+    this_month_by_cat = {
+        row.category_id: {"name": row.name, "amount": float(row.amount)}
+        for row in db.query(
+            Transaction.category_id,
+            Category.name,
+            func.sum(Transaction.amount).label("amount"),
+        )
         .select_from(Transaction)
         .join(Category, Transaction.category_id == Category.id)
         .filter(
@@ -265,30 +283,32 @@ def get_insights(
             Transaction.date >= current_start,
             Transaction.date <= current_end,
         )
-        .group_by(Category.name)
+        .group_by(Transaction.category_id, Category.name)
         .all()
-    )
-    last_month_by_cat = dict(
-        db.query(Category.name, func.sum(Transaction.amount))
+    }
+ 
+    last_month_by_cat = {
+        row.category_id: float(row.amount)
+        for row in db.query(
+            Transaction.category_id,
+            func.sum(Transaction.amount).label("amount"),
+        )
         .select_from(Transaction)
-        .join(Category, Transaction.category_id == Category.id)
         .filter(
             Transaction.user_id == current_user.id,
             Transaction.type.in_(outgoing_types),
             Transaction.date >= prev_start,
             Transaction.date <= prev_end,
         )
-        .group_by(Category.name)
+        .group_by(Transaction.category_id)
         .all()
-    )
+    }
  
-    # --- Бюджеты пользователя ---
     budgets = db.query(Budget).filter(Budget.user_id == current_user.id).all()
     total_budget = sum(b.monthly_limit for b in budgets)
  
-    # --- Прогноз "сколько можно тратить в день" ---
     daily_allowance = None
-    daily_allowance_note = None
+    daily_allowance_note = None 
  
     if total_budget > 0:
         remaining_budget = total_budget - expense_this_month
@@ -298,60 +318,54 @@ def get_insights(
     else:
         daily_allowance_note = "set_budget"
  
-    # --- Генерация текстовых инсайтов на основе правил ---
     insights = []
  
-    # 1. Превышение бюджета по категориям
     for b in budgets:
-        cat = db.query(Category).filter(Category.id == b.category_id).first()
-        if not cat:
-            continue
-        spent = float(this_month_by_cat.get(cat.name, 0.0))
-        if b.monthly_limit > 0:
-            pct = (spent / b.monthly_limit) * 100
-            if pct >= 100:
-                insights.append({
-                    "key": "budget_exceeded",
-                    "params": {"category": cat.name, "spent": int(spent), "limit": int(b.monthly_limit)}
-                })
-            elif pct >= 80:
-                insights.append({
-                    "key": "budget_used",
-                    "params": {"category": cat.name, "percent": int(pct)}
-                })
+        cat_data = this_month_by_cat.get(b.category_id)
+        cat_name = cat_data["name"] if cat_data else None
+        spent = cat_data["amount"] if cat_data else 0.0
  
-    # 2. Рост расходов по категориям по сравнению с прошлым месяцем
-    for cat_name, amount in this_month_by_cat.items():
-        prev_amount = last_month_by_cat.get(cat_name, 0.0)
-        amount = float(amount)
+        if not cat_name or b.monthly_limit <= 0:
+            continue
+ 
+        pct = (spent / b.monthly_limit) * 100
+        if pct >= 100:
+            insights.append({
+                "key": "budget_exceeded",
+                "params": {
+                    "category": cat_name,
+                    "spent": round(spent),
+                    "limit": round(b.monthly_limit),
+                },
+            })
+        elif pct >= 80:
+            insights.append({
+                "key": "budget_used",
+                "params": {"category": cat_name, "percent": round(pct)},
+            })
+ 
+    for cat_id, data in this_month_by_cat.items():
+        prev_amount = last_month_by_cat.get(cat_id, 0.0)
         if prev_amount and prev_amount > 0:
-            change_pct = ((amount - prev_amount) / prev_amount) * 100
+            change_pct = ((data["amount"] - prev_amount) / prev_amount) * 100
             if change_pct >= 20:
                 insights.append({
-                    "key": "expense_growing",  # Используй этот ключ, если добавишь его в JSON
-                    "params": {"category": cat_name, "percent": int(change_pct)}
+                    "key": "expense_growing",
+                    "params": {"category": data["name"], "percent": round(change_pct)},
                 })
  
-    # 3. Расходы превышают доходы
     if income_this_month > 0 and expense_this_month > income_this_month:
-        insights.append({
-            "key": "expenses_exceed_income",
-            "params": {}
-        })
+        insights.append({"key": "expenses_exceed_income", "params": {}})
  
-    # 4. Самая крупная категория расходов в этом месяце
     if this_month_by_cat:
-        top_category, top_amount = max(this_month_by_cat.items(), key=lambda x: x[1])
+        top_cat_id, top_data = max(this_month_by_cat.items(), key=lambda x: x[1]["amount"])
         insights.append({
             "key": "top_category",
-            "params": {"category": top_category, "amount": int(top_amount)}
+            "params": {"category": top_data["name"], "amount": round(top_data["amount"])},
         })
  
     if not insights:
-        insights.append({
-            "key": "not_enough_data",
-            "params": {}
-        })
+        insights.append({"key": "not_enough_data", "params": {}})
  
     return {
         "days_remaining": days_remaining,
@@ -362,4 +376,3 @@ def get_insights(
         "income_this_month": income_this_month,
         "insights": insights,
     }
- 

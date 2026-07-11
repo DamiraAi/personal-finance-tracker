@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import i18n from "../i18n";
+
 export default function Login() {
-  const { t, i18n } = useTranslation("translation");
+  const { t,  } = useTranslation("translation");
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
+import i18n from "../i18n";
+
 const API_BASE = "https://finance-backend-tj8e.onrender.com";
 
 function authHeaders() {
@@ -12,8 +14,9 @@ function authHeaders() {
 }
 
 function BudgetsSection() {
-  // Указываем пространство имен "dashboard", чтобы подтягивать строгие финансовые термины
-  const { t } = useTranslation("dashboard"); 
+  // Большинство ключей бюджетов лежит в translation.json, поэтому он — namespace по умолчанию.
+  // transactions.no_category берём отдельно из dashboard.json (ниже, с явным ns).
+  const { t } = useTranslation("translation");
   
   const [categories, setCategories] = useState([]);
   const [budgets, setBudgets] = useState([]);
@@ -107,7 +110,7 @@ function BudgetsSection() {
 
   // Безопасное форматирование системных и кастомных названий категорий
   const formatCategoryName = (name) => {
-    if (!name) return t("transactions.no_category");
+    if (!name) return t("transactions.no_category", { ns: "dashboard" });
     return name.startsWith("categories.") ? t(name, { ns: "translation" }) : name;
   };
 
