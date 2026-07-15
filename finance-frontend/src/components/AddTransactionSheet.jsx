@@ -5,10 +5,11 @@ import { useAppData } from "../context/AppDataContext";
 function AddTransactionSheet({ isOpen, onClose }) {
   const { t } = useTranslation(["dashboard", "translation"]);
   
-  // Добавили refreshAfterTransactionChange в деструктуризацию контекста!
+  // Добавили getCategories в деструктуризацию контекста!
   const { 
     wallets, 
     categories, 
+    getCategories,
     showNotification, 
     refreshAfterTransactionChange, 
     BASE_URL 
@@ -20,6 +21,10 @@ function AddTransactionSheet({ isOpen, onClose }) {
   const [walletId, setWalletId] = useState("");
   const [categoryId, setCategoryId] = useState("");
 
+  // Стейты для динамического создания категории в шторке
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+
   // Стейт для предотвращения повторных нажатий
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,11 +34,40 @@ function AddTransactionSheet({ isOpen, onClose }) {
     setType("expense");
     setWalletId("");
     setCategoryId("");
+    setShowNewCategoryInput(false);
+    setNewCategoryName("");
   };
 
   const handleClose = () => {
     resetForm();
     onClose();
+  };
+
+  // Функция создания категории
+  const createCategory = async () => {
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName) return;
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`${BASE_URL}/categories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: trimmedName, type }) // type — тот же тип, что выбран сейчас (income/expense)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        showNotification(t("notifications.category_created"));
+        setNewCategoryName("");
+        setShowNewCategoryInput(false);
+        await getCategories(); // обновляем список категорий
+        setCategoryId(String(data.id)); // сразу выбираем созданную категорию
+      } else {
+        showNotification(data.detail || t("notifications.category_error"), "error");
+      }
+    } catch (error) {
+      console.error("Ошибка создания категории:", error);
+      showNotification(t("notifications.network_error"), "error");
+    }
   };
 
   const createTransaction = async () => {
@@ -200,11 +234,12 @@ function AddTransactionSheet({ isOpen, onClose }) {
           )}
         </select>
 
+        {/* Блок селекта категорий и формы создания */}
         <select
           value={categoryId}
           disabled={isSubmitting}
           onChange={(e) => setCategoryId(e.target.value)}
-          style={{ width: "100%", padding: "12px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px", boxSizing: "border-box", opacity: isSubmitting ? 0.6 : 1 }}
+          style={{ width: "100%", padding: "12px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "10px", boxSizing: "border-box", opacity: isSubmitting ? 0.6 : 1 }}
         >
           <option value="">{t("category.select")} ({t("category.optional")})</option>
           {categories.filter(cat => !cat.type || cat.type === type).map(cat => {
@@ -212,6 +247,33 @@ function AddTransactionSheet({ isOpen, onClose }) {
             return <option key={cat.id} value={cat.id}>{displayName}</option>;
           })}
         </select>
+
+        {!showNewCategoryInput ? (
+          <button
+            type="button"
+            onClick={() => setShowNewCategoryInput(true)}
+            disabled={isSubmitting}
+            style={{ background: "none", border: "none", color: "#60a5fa", fontSize: "0.85rem", marginBottom: "15px", cursor: "pointer", padding: 0 }}
+          >
+            + {t("category.title")}
+          </button>
+        ) : (
+          <div style={{ display: "flex", gap: "8px", marginBottom: "15px" }}>
+            <input
+              type="text"
+              placeholder={t("category.placeholder")}
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              style={{ flex: 1, padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", boxSizing: "border-box" }}
+            />
+            <button type="button" onClick={createCategory} style={{ padding: "10px 14px", backgroundColor: "#22c55e", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold" }}>
+              {t("category.save")}
+            </button>
+            <button type="button" onClick={() => { setShowNewCategoryInput(false); setNewCategoryName(""); }} style={{ padding: "10px 14px", backgroundColor: "#64748b", color: "white", border: "none", borderRadius: "8px" }}>
+              {t("category.cancel")}
+            </button>
+          </div>
+        )}
 
         <input
           type="text"
