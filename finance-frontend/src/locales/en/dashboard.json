@@ -60,7 +60,8 @@
     "destination": "Destination Wallet",
     "select_source": "Select a source wallet",
     "select_destination": "Select a destination wallet",
-    "select": "Select Wallet"
+    "select": "Select Wallet",
+    "delete": "Delete"
   },
 
   "transaction": {
@@ -126,6 +127,16 @@
     "category_error": "Failed to create the category.",
     "network_error": "Unable to connect to the server.",
     "contact_created": "Contact added successfully.",
-    "contact_error": "Failed to add the contact."
-  }
+    "contact_error": "Failed to add the contact.",
+    "wallet_delete_confirm": "Delete this wallet? This action cannot be undone.",
+  "wallet_delete_balance_error": "Cannot delete a wallet with a non-zero balance. Transfer or spend the funds first.",
+  "wallet_deleted": "Wallet deleted.",
+  "wallet_delete_error": "Failed to delete wallet."
+  },
+  "profile": {
+  "title": "Profile",
+  "language": "App language",
+  "logout": "Log out"
+},
+"see_all": "See all"
 }

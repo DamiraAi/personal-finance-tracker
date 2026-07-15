@@ -112,6 +112,18 @@
   "alert_register_success": "Учетная запись успешно создана.",
   "alert_recovery_sent": "Ссылка для восстановления доступа отправлена на ваш email.",
   "alert_login_error": "Ошибка аутентификации: неверный логин или пароль.",
-  "alert_register_error": "Ошибка при создании учетной записи."
+  "alert_register_error": "Ошибка при создании учетной записи.",
+   "nav": {
+    "home": "Главная",
+    "wallets": "Счета",
+    "reports": "Отчёты",
+    "profile": "Профиль"
+  },
+  "see_all": "Показать все",
+  "reports": {
+  "title": "Отчёты",
+  "analytics_tab": "📈 Аналитика",
+  "budgets_tab": "🎯 Бюджеты"
+}
   
 }

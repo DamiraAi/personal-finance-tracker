@@ -123,6 +123,18 @@
 
   "alert_login_error": "Invalid username or password.",
   "alert_register_error": "Unable to create your account. Please try again.",
-  "alert_server_error": "Unable to connect to the server."
+  "alert_server_error": "Unable to connect to the server.",
+  "nav": {
+    "home": "Home",
+    "wallets": "Accounts",
+    "reports": "Reports",
+    "profile": "Profile"
+  },
+  "reports": {
+  "title": "Reports",
+  "analytics_tab": "📈 Analytics",
+  "budgets_tab": "🎯 Budgets"
+},
+"see_all": "See all"
   
 }

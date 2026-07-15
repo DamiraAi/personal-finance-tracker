@@ -19,7 +19,7 @@ export default function Login() {
 
   useEffect(() => {
     if (localStorage.getItem("token")) {
-      navigate("/dashboard");
+      navigate("/home");
     }
   }, [navigate]);
 
@@ -59,7 +59,7 @@ export default function Login() {
       if (response.ok && data.access_token) {
         localStorage.setItem("token", data.access_token);
         alert(t("alert_login_success"));
-        navigate("/dashboard");
+        navigate("/home");
       } else {
         alert(data.detail || t("alert_login_error"));
       }

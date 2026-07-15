@@ -1,11 +1,16 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import Login from "./pages/Login"
-import Dashboard from "./pages/Dashboard"
 import ForgotPassword from "./pages/ForgotPassword"
 import ResetPassword from "./pages/ResetPassword"
+import Home from "./pages/Home"
+import Wallets from "./pages/Wallets"
+import Reports from "./pages/Reports"
+import Profile from "./pages/Profile"
+import Transactions from "./pages/Transactions"
+import AppLayout from "./layouts/AppLayout"
+
 
 function App() {
-  // Защита роутов: если токена нет, перенаправляем на логин
   const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem("token")
     return token ? children : <Navigate to="/" />
@@ -14,22 +19,25 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Публичный роут: Авторизация */}
+        {/* Публичные роуты */}
         <Route path="/" element={<Login />} />
-
-        {/* Публичные роуты: Восстановление пароля */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Защищенный роут: Дашборд с графиками */}
+        {/* Защищённые роуты — все внутри AppLayout с нижней навигацией */}
         <Route
-          path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <AppLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route path="/home" element={<Home />} />
+          <Route path="/wallets" element={<Wallets />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/transactions" element={<Transactions />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )

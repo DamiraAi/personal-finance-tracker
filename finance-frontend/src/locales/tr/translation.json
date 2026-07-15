@@ -115,5 +115,17 @@
 
   "alert_login_error": "Kullanıcı adı veya şifre hatalı.",
   "alert_register_error": "Hesap oluşturulamadı. Lütfen tekrar deneyin.",
-  "alert_server_error": "Sunucuya bağlanılamadı."
+  "alert_server_error": "Sunucuya bağlanılamadı.",
+  "nav": {
+    "home": "Ana Sayfa",
+    "wallets": "Hesaplar",
+    "reports": "Raporlar",
+    "profile": "Profil"
+  },
+  "reports": {
+    "title": "Raporlar",
+    "analytics_tab": "📈 Analizler",
+    "budgets_tab": "🎯 Bütçeler"
+  },
+  "see_all": "Tümünü Gör"
 }

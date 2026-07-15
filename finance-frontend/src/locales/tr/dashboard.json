@@ -60,7 +60,8 @@
     "destination": "Alıcı Cüzdan",
     "select_source": "Gönderen cüzdanı seçin",
     "select_destination": "Alıcı cüzdanı seçin",
-    "select": "Cüzdan Seçin"
+    "select": "Cüzdan Seçin",
+    "delete": "Sil"
   },
 
   "transaction": {
@@ -126,6 +127,16 @@
     "category_error": "Kategori oluşturulamadı.",
     "network_error": "Sunucuya bağlanılamadı.",
     "contact_created": "Kişi eklendi.",
-    "contact_error": "Kişi eklenemedi."
-  }
+    "contact_error": "Kişi eklenemedi.",
+    "wallet_delete_confirm": "Bu cüzdanı silmek istiyor musunuz? Bu işlem geri alınamaz.",
+  "wallet_delete_balance_error": "Bakiyesi sıfır olmayan bir cüzdan silinemez. Önce transfer edin veya harcayın.",
+  "wallet_deleted": "Cüzdan silindi.",
+  "wallet_delete_error": "Cüzdan silinemedi."
+  },
+  "profile": {
+    "title": "Profil",
+    "language": "Uygulama Dili",
+    "logout": "Çıkış Yap"
+  },
+  "see_all": "Tümünü Gör"
 }
