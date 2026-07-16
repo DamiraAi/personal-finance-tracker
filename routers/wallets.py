@@ -76,3 +76,43 @@ def get_wallets(
     ).all()
 
     return wallets
+
+# =====================================================
+# DELETE WALLET
+# =====================================================
+@router.delete("/wallets/{wallet_id}")
+def delete_wallet(
+    wallet_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    db_wallet = db.query(models.Wallet).filter(
+        models.Wallet.id == wallet_id,
+        models.Wallet.user_id == current_user.id
+    ).first()
+
+    if not db_wallet:
+        raise HTTPException(status_code=404, detail="Wallet not found")
+
+    # Проверка: нельзя удалить кошелёк с ненулевым балансом
+    if db_wallet.balance != 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete a wallet with a non-zero balance"
+        )
+
+    # Проверка: нельзя удалить кошелёк, если по нему есть транзакции
+    has_transactions = db.query(models.Transaction).filter(
+        (models.Transaction.wallet_id == wallet_id) |
+        (models.Transaction.to_wallet_id == wallet_id)
+    ).first()
+
+    if has_transactions:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete a wallet that has transaction history"
+        )
+
+    db.delete(db_wallet)
+    db.commit()
+    return {"detail": "Wallet deleted successfully"}

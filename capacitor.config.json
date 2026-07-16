@@ -1,0 +1,9 @@
+{
+  "appId": "com.damira.moneypilot",
+  "appName": "MoneyPilot",
+  "webDir": "dist",
+  "server": {
+    "url": "https://personal-finance-tracker-damira.vercel.app",
+    "cleartext": false
+  }
+}
