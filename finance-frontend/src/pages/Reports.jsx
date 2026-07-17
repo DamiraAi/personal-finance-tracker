@@ -6,6 +6,7 @@ import {
 import { useAppData } from "../context/AppDataContext";
 import Tabs from "../components/Tabs";
 import BudgetsSection from "../components/BudgetsSection";
+import PageHeader from "../components/PageHeader";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"];
 
@@ -149,9 +150,7 @@ function Reports() {
 
   return (
     <div style={{ padding: "20px", color: "white" }}>
-      <h1 style={{ fontSize: "1.5rem", marginBottom: "20px" }}>
-        {t("reports.title", { ns: "translation" })}
-      </h1>
+      <PageHeader title={t("reports.title", { ns: "translation" })} />
       <Tabs
         tabs={[
           { label: t("reports.analytics_tab", { ns: "translation" }), content: <AnalyticsTab /> },

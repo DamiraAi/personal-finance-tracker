@@ -124,6 +124,8 @@
   "title": "Отчёты",
   "analytics_tab": "📈 Аналитика",
   "budgets_tab": "🎯 Бюджеты"
-}
-  
+},
+"common": {
+    "back": "Назад"
+  }  
 }

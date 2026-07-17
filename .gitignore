@@ -1,3 +1,11 @@
 ﻿venv/
 finance.db
 .env
+node_modules/
+.transforms/
+build/
+.gradle/
+.pnp/
+.pnp.js
+dist/
+build/

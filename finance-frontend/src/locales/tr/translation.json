@@ -127,5 +127,8 @@
     "analytics_tab": "📈 Analizler",
     "budgets_tab": "🎯 Bütçeler"
   },
-  "see_all": "Tümünü Gör"
+  "common": {
+    "back": "Geri"
+  }
+  
 }

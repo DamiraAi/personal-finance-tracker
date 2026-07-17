@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import PageHeader from "../components/PageHeader";
 
 function Profile() {
   const { t, i18n } = useTranslation(["dashboard", "translation"]);
@@ -34,7 +35,7 @@ function Profile() {
 
   return (
     <div style={{ padding: "20px", color: "white" }}>
-      <h1 style={{ fontSize: "1.5rem", marginBottom: "20px" }}>{t("profile.title", "Профиль")}</h1>
+      <PageHeader title={t("profile.title", "Профиль")} />
 
       {/* Переключатель языка */}
       <div style={{ backgroundColor: "#1e293b", padding: "16px", borderRadius: "14px", marginBottom: "20px" }}>

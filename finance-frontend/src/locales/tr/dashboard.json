@@ -43,7 +43,8 @@
     "no_contacts": "Henüz kişi eklenmedi.",
     "repay_debt": "Borç Seçin",
     "select_debt": "Ödenecek borcu seçin",
-    "no_active_debts": "Aktif borç bulunmuyor."
+    "no_active_debts": "Aktif borç bulunmuyor.",
+    "original_amount": "Original tutar"
   },
 
   "wallet": {
@@ -99,7 +100,8 @@
     "edit": "Düzenle",
     "delete": "Sil",
     "save": "Kaydet",
-    "cancel": "İptal"
+    "cancel": "İptal",
+    "see_all": "Tümünü Gör"
   },
 
   "common": {
@@ -137,6 +139,6 @@
     "title": "Profil",
     "language": "Uygulama Dili",
     "logout": "Çıkış Yap"
-  },
-  "see_all": "Tümünü Gör"
+  }
+  
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppData } from "../context/AppDataContext";
 import Tabs from "../components/Tabs";
+import PageHeader from "../components/PageHeader";
 
 function WalletsTab() {
   const { t } = useTranslation(["dashboard", "translation"]);
@@ -346,6 +347,11 @@ function DebtsTab() {
                 <span>{people.find(p => String(p.id) === String(d.person_id))?.name || t("debts.unknown_person")}</span>
                 <span style={{ fontWeight: "bold", color: "#10b981" }}>
                   {d.remaining !== undefined ? d.remaining : d.amount}
+                  {d.amount !== undefined && d.remaining !== undefined && d.remaining !== d.amount && (
+                    <span style={{ color: "#64748b", fontWeight: "normal", fontSize: "0.75rem", marginLeft: "6px" }}>
+                      ({t("debts.original_amount")}: {d.amount})
+                    </span>
+                  )}
                 </span>
               </div>
             ))
@@ -362,6 +368,11 @@ function DebtsTab() {
                 <span>{people.find(p => String(p.id) === String(d.person_id))?.name || t("debts.creditor")}</span>
                 <span style={{ fontWeight: "bold", color: "#ef4444" }}>
                   {d.remaining !== undefined ? d.remaining : d.amount}
+                  {d.amount !== undefined && d.remaining !== undefined && d.remaining !== d.amount && (
+                    <span style={{ color: "#64748b", fontWeight: "normal", fontSize: "0.75rem", marginLeft: "6px" }}>
+                      ({t("debts.original_amount")}: {d.amount})
+                    </span>
+                  )}
                 </span>
               </div>
             ))
@@ -437,7 +448,7 @@ function Wallets() {
 
   return (
     <div style={{ padding: "20px", color: "white" }}>
-      <h1 style={{ fontSize: "1.5rem", marginBottom: "20px" }}>{t("wallet.title")}</h1>
+      <PageHeader title={t("wallet.title")} />
       <Tabs
         tabs={[
           { label: `💳 ${t("wallet.title")}`, content: <WalletsTab /> },

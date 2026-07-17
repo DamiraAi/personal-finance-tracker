@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppData } from "../context/AppDataContext";
+import PageHeader from "../components/PageHeader"; // ИСПРАВЛЕНО: Добавлен импорт
 
 function Transactions() {
   const { t, i18n } = useTranslation(["dashboard", "translation"]);
@@ -15,7 +16,7 @@ function Transactions() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  // Храним исходный объект транзакции целиком, чтобы не потерять скрытые свойства (to_wallet_id, person_id и т.д.)
+  // Храним исходный объект транзакции целиком
   const [editingTx, setEditingTx] = useState(null); 
   const [editingTxId, setEditingTxId] = useState(null);
   const [editTxAmount, setEditTxAmount] = useState("");
@@ -36,7 +37,7 @@ function Transactions() {
     setEditTxAmount(tx.amount);
     setEditTxDescription(tx.description || "");
     setEditTxType(tx.type);
-    setEditTxCategoryId(tx.category_id || "");
+    setEditTxCategoryId(tx.category_id ? String(tx.category_id) : ""); // ИСПРАВЛЕНО: Приведение к строке
     setEditTxWalletId(tx.wallet_id);
   };
 
@@ -55,7 +56,7 @@ function Transactions() {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          ...editingTx, // Сохраняем остальные свойства транзакции (например, для переводов или долгов)
+          ...editingTx,
           amount: parsedAmount,
           description: editTxDescription.trim(),
           type: editTxType,
@@ -79,7 +80,7 @@ function Transactions() {
   };
 
   const deleteTransaction = async (transactionId) => {
-    if (!window.confirm(t("transactions.confirm_delete", "Вы уверены?"))) return; // Базовая защита от случайного удаления
+    if (!window.confirm(t("transactions.confirm_delete", "Вы уверены?"))) return;
     const token = localStorage.getItem("token");
     const response = await fetch(`${BASE_URL}/transactions/${transactionId}`, {
       method: "DELETE",
@@ -108,7 +109,7 @@ function Transactions() {
 
   return (
     <div style={{ padding: "20px", color: "white" }}>
-      <h1 style={{ fontSize: "1.5rem", marginBottom: "20px" }}>{t("transactions.title")}</h1>
+      <PageHeader title={t("transactions.title")} />
 
       {/* Поиск и фильтры */}
       <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
@@ -134,7 +135,7 @@ function Transactions() {
         </select>
         <select
           value={filterCategory}
-          onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }} // Исправлен сброс страницы на 1
+          onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
           style={{ padding: "10px 14px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569" }}
         >
           <option value="all">{t("transactions.all_categories")}</option>
@@ -165,7 +166,6 @@ function Transactions() {
                   <input type="text" value={editTxDescription} onChange={(e) => setEditTxDescription(e.target.value)}
                     style={{ width: "100%", padding: "10px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "10px", boxSizing: "border-box" }} />
                   
-                  {/* Селект задизейблен для предотвращения поломки структуры данных транзакции */}
                   <select value={editTxType} disabled
                     style={{ width: "100%", padding: "10px", borderRadius: "8px", backgroundColor: "#1e293b", color: "#94a3b8", border: "1px solid #475569", marginBottom: "10px" }}>
                     <option value="income">{t("transaction.income")}</option>

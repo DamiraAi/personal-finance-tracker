@@ -43,8 +43,10 @@
     "no_contacts": "No contacts available.",
     "repay_debt": "Select Debt",
     "select_debt": "Select a debt to repay",
-    "no_active_debts": "No active debts found."
-  },
+    "no_active_debts": "No active debts found.",
+    "original_amount": "Original Amount"
+
+  }, 
 
   "wallet": {
     "title": "Wallets",
@@ -99,7 +101,8 @@
     "edit": "Edit",
     "delete": "Delete",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "see_all": "See all"
   },
 
   "common": {
@@ -137,6 +140,6 @@
   "title": "Profile",
   "language": "App language",
   "logout": "Log out"
-},
-"see_all": "See all"
+}
+
 }

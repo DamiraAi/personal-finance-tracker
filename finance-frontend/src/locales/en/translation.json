@@ -134,7 +134,9 @@
   "title": "Reports",
   "analytics_tab": "📈 Analytics",
   "budgets_tab": "🎯 Budgets"
-},
-"see_all": "See all"
+  },
   
+  "common": {
+    "back": "Back"
+  }
 }

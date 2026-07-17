@@ -5,7 +5,6 @@ const BASE_URL = "https://finance-backend-tj8e.onrender.com";
 export const AppDataContext = createContext(null);
 
 export function AppDataProvider({ children }) {
-  // Локальный стейт для токена, чтобы React мгновенно реагировал на вход/выход пользователя
   const [token, setToken] = useState(localStorage.getItem("token"));
 
   const [wallets, setWallets] = useState([]);
@@ -23,17 +22,14 @@ export function AppDataProvider({ children }) {
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
   const toastTimeoutRef = useRef(null);
 
-  // Вспомогательная функция для получения актуального заголовка авторизации
   const getAuthHeaders = useCallback(() => {
     return { Authorization: `Bearer ${token}` };
   }, [token]);
 
-  // Функция для обновления токена в контексте (вызывать при успешном логине/регистрации)
   const updateToken = useCallback(() => {
     setToken(localStorage.getItem("token"));
   }, []);
 
-  // Функция разлогина — полностью стирает токен и очищает все стейты от старого пользователя
   const logout = useCallback(() => {
     localStorage.removeItem("token");
     setToken(null);
@@ -46,27 +42,46 @@ export function AppDataProvider({ children }) {
     setAllTransactions([]);
   }, []);
 
-  // 1. Функция последних транзакций
+  // Универсальный обработчик ошибок авторизации (если токен протух)
+  const handleApiError = useCallback((response) => {
+    if (response.status === 401) {
+      console.warn("Токен устарел или недействителен. Разлогин.");
+      logout();
+    }
+  }, [logout]);
+
+  // 1. Функция последних транзакций (БЕЗОПАСНАЯ)
   const getRecentTransactions = useCallback(async () => {
     if (!token) return;
     try {
       const walletsResponse = await fetch(`${BASE_URL}/wallets`, { headers: getAuthHeaders() });
-      if (!walletsResponse.ok) return;
+      if (!walletsResponse.ok) {
+        handleApiError(walletsResponse);
+        return;
+      }
       
       const walletsData = await walletsResponse.json();
-      if (walletsData.length === 0) {
+      if (!Array.isArray(walletsData) || walletsData.length === 0) {
         setRecentTransactions([]);
         return;
       }
       
+      // Добавили .catch() к каждому индивидуальному промису
       const requests = walletsData.map((wallet) =>
         fetch(`${BASE_URL}/transactions?wallet_id=${wallet.id}`, { headers: getAuthHeaders() })
-          .then((res) => (res.ok ? res.json() : []))
+          .then((res) => {
+            if (!res.ok) {
+              handleApiError(res);
+              return [];
+            }
+            return res.json();
+          })
+          .catch(() => []) 
       );
+      
       const results = await Promise.all(requests);
       const allTransactionsData = results.flat();
 
-      // Фильтр дубликатов
       const uniqueTransactions = allTransactionsData.filter(
         (tx, index, self) =>
           self.findIndex((t) => (t.id || t.transaction_id || t.debt_id) === (tx.id || tx.transaction_id || tx.debt_id)) === index
@@ -77,27 +92,40 @@ export function AppDataProvider({ children }) {
     } catch (error) {
       console.error("Ошибка при загрузке последних транзакций:", error);
     }
-  }, [token, getAuthHeaders]);
+  }, [token, getAuthHeaders, handleApiError]);
 
-  // 2. Функция ВСЕХ транзакций
+  // 2. Функция ВСЕХ транзакций (БЕЗОПАСНАЯ)
   const getAllTransactions = useCallback(async () => {
     if (!token) return;
     try {
       const walletsResponse = await fetch(`${BASE_URL}/wallets`, { headers: getAuthHeaders() });
-      if (!walletsResponse.ok) return;
+      if (!walletsResponse.ok) {
+        handleApiError(walletsResponse);
+        return;
+      }
+      
       const walletsData = await walletsResponse.json();
-      if (walletsData.length === 0) {
+      if (!Array.isArray(walletsData) || walletsData.length === 0) {
         setAllTransactions([]);
         return;
       }
+      
+      // Добавили .catch() к каждому индивидуальному промису
       const requests = walletsData.map((wallet) =>
         fetch(`${BASE_URL}/transactions?wallet_id=${wallet.id}`, { headers: getAuthHeaders() })
-          .then((res) => (res.ok ? res.json() : []))
+          .then((res) => {
+            if (!res.ok) {
+              handleApiError(res);
+              return [];
+            }
+            return res.json();
+          })
+          .catch(() => [])
       );
+      
       const results = await Promise.all(requests);
       const combined = results.flat();
 
-      // Фильтр дубликатов
       const uniqueTransactions = combined.filter(
         (tx, index, self) =>
           self.findIndex((t) => (t.id || t.transaction_id || t.debt_id) === (tx.id || tx.transaction_id || tx.debt_id)) === index
@@ -108,7 +136,7 @@ export function AppDataProvider({ children }) {
     } catch (error) {
       console.error("Ошибка при загрузке всех транзакций:", error);
     }
-  }, [token, getAuthHeaders]);
+  }, [token, getAuthHeaders, handleApiError]);
 
   const showNotification = useCallback((message, type = "success") => {
     if (toastTimeoutRef.current) {
@@ -124,33 +152,51 @@ export function AppDataProvider({ children }) {
     if (!token) return;
     try {
       const response = await fetch(`${BASE_URL}/wallets`, { headers: getAuthHeaders() });
-      if (response.ok) setWallets(await response.json());
+      if (response.ok) {
+        setWallets(await response.json());
+      } else {
+        handleApiError(response);
+      }
     } catch (error) {
       console.error("Ошибка при получении кошельков:", error);
     }
-  }, [token, getAuthHeaders]);
+  }, [token, getAuthHeaders, handleApiError]);
 
   const getCategories = useCallback(async () => {
     if (!token) return;
     try {
       const response = await fetch(`${BASE_URL}/categories`, { headers: getAuthHeaders() });
-      if (response.ok) setCategories(await response.json());
+      if (response.ok) {
+        setCategories(await response.json());
+      } else {
+        handleApiError(response);
+      }
     } catch (error) {
       console.error("Ошибка при получении категорий:", error);
     }
-  }, [token, getAuthHeaders]);
+  }, [token, getAuthHeaders, handleApiError]);
 
   const fetchDebtsData = useCallback(async () => {
     if (!token) return;
     try {
       const debtsRes = await fetch(`${BASE_URL}/debts`, { headers: getAuthHeaders() });
       const peopleRes = await fetch(`${BASE_URL}/debts/people`, { headers: getAuthHeaders() });
-      if (debtsRes.ok) setDebts(await debtsRes.json());
-      if (peopleRes.ok) setPeople(await peopleRes.json());
+      
+      if (debtsRes.ok) {
+        setDebts(await debtsRes.json());
+      } else {
+        handleApiError(debtsRes);
+      }
+      
+      if (peopleRes.ok) {
+        setPeople(await peopleRes.json());
+      } else {
+        handleApiError(peopleRes);
+      }
     } catch (err) {
       console.error("Ошибка при загрузке долгов:", err);
     }
-  }, [token, getAuthHeaders]);
+  }, [token, getAuthHeaders, handleApiError]);
 
   const getReport = useCallback(async () => {
     if (!token) return;
@@ -169,13 +215,16 @@ export function AppDataProvider({ children }) {
       if (queryString) url += `?${queryString}`;
 
       const response = await fetch(url, { headers: getAuthHeaders() });
-      if (response.ok) setReport(await response.json());
+      if (response.ok) {
+        setReport(await response.json());
+      } else {
+        handleApiError(response);
+      }
     } catch (error) {
       console.error("Ошибка при получении отчета:", error);
     }
-  }, [token, period, startDate, endDate, getAuthHeaders]);
+  }, [token, period, startDate, endDate, getAuthHeaders, handleApiError]);
 
-  // Единая функция обновления
   const refreshAfterTransactionChange = useCallback(() => {
     getWallets();
     getReport();
@@ -184,7 +233,6 @@ export function AppDataProvider({ children }) {
     fetchDebtsData();
   }, [getWallets, getReport, getRecentTransactions, getAllTransactions, fetchDebtsData]);
 
-  // Эффект первичной инициализации и обновления данных при смене пользователя (токена)
   useEffect(() => {
     if (token) {
       getWallets();
@@ -193,7 +241,6 @@ export function AppDataProvider({ children }) {
       getRecentTransactions();
       getAllTransactions();
     } else {
-      // Если токена нет, гарантированно очищаем память контекста
       setWallets([]);
       setCategories([]);
       setDebts([]);
@@ -204,7 +251,6 @@ export function AppDataProvider({ children }) {
     }
   }, [token, getWallets, getCategories, fetchDebtsData, getRecentTransactions, getAllTransactions]);
 
-  // Обновление отчетов при изменении токена или параметров фильтрации периода
   useEffect(() => {
     if (token) {
       getReport();
@@ -225,7 +271,7 @@ export function AppDataProvider({ children }) {
     toast, showNotification,
     getWallets, getCategories, fetchDebtsData, getReport,
     BASE_URL,
-    token, updateToken, logout // Экспортируем методы управления сессией
+    token, updateToken, logout
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
