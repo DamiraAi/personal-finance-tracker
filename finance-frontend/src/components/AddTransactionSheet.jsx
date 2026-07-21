@@ -5,7 +5,6 @@ import { useAppData } from "../context/AppDataContext";
 function AddTransactionSheet({ isOpen, onClose }) {
   const { t } = useTranslation(["dashboard", "translation"]);
   
-  // Добавили getCategories в деструктуризацию контекста!
   const { 
     wallets, 
     categories, 
@@ -15,11 +14,19 @@ function AddTransactionSheet({ isOpen, onClose }) {
     BASE_URL 
   } = useAppData();
 
+  // Вспомогательная функция для генерации даты для input type="datetime-local"
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  };
+
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("expense");
   const [walletId, setWalletId] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [date, setDate] = useState(getCurrentDateTime()); // <-- 1. Стейт для даты
 
   // Стейты для динамического создания категории в шторке
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
@@ -34,6 +41,7 @@ function AddTransactionSheet({ isOpen, onClose }) {
     setType("expense");
     setWalletId("");
     setCategoryId("");
+    setDate(getCurrentDateTime()); // <-- 2. Сброс даты при закрытии
     setShowNewCategoryInput(false);
     setNewCategoryName("");
   };
@@ -52,15 +60,15 @@ function AddTransactionSheet({ isOpen, onClose }) {
       const response = await fetch(`${BASE_URL}/categories`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: trimmedName, type }) // type — тот же тип, что выбран сейчас (income/expense)
+        body: JSON.stringify({ name: trimmedName, type })
       });
       const data = await response.json();
       if (response.ok) {
         showNotification(t("notifications.category_created"));
         setNewCategoryName("");
         setShowNewCategoryInput(false);
-        await getCategories(); // обновляем список категорий
-        setCategoryId(String(data.id)); // сразу выбираем созданную категорию
+        await getCategories();
+        setCategoryId(String(data.id));
       } else {
         showNotification(data.detail || t("notifications.category_error"), "error");
       }
@@ -71,12 +79,10 @@ function AddTransactionSheet({ isOpen, onClose }) {
   };
 
   const createTransaction = async () => {
-    // 1. Защита от дублей: если запрос уже идет, ничего не делаем
     if (isSubmitting) return;
 
     const token = localStorage.getItem("token");
 
-    // 2. Валидация на наличие кошельков
     if (wallets.length === 0) {
       showNotification(t("notifications.create_wallet_first", "Сначала создайте хотя бы один кошелек!"), "error");
       return;
@@ -93,7 +99,6 @@ function AddTransactionSheet({ isOpen, onClose }) {
       return;
     }
 
-    // Включаем блокировку кнопки
     setIsSubmitting(true);
 
     try {
@@ -108,7 +113,7 @@ function AddTransactionSheet({ isOpen, onClose }) {
           amount: parsedAmount,
           description: description.trim() || t("transaction.without_description"),
           wallet_id: Number(walletId),
-          date: new Date().toISOString(),
+          date: date ? new Date(date).toISOString() : new Date().toISOString(), // <-- 3. Отправка выбранной даты
           category_id: categoryId ? Number(categoryId) : null,
           person_id: null,
           debt_id: null,
@@ -119,12 +124,10 @@ function AddTransactionSheet({ isOpen, onClose }) {
       if (response.ok) {
         showNotification(t("notifications.transaction_created"));
         
-        // Теперь функция существует и мгновенно обновит кошельки в фоне!
         if (typeof refreshAfterTransactionChange === "function") {
           refreshAfterTransactionChange();
         }
         
-        // Закрываем и сбрасываем шторку
         handleClose();
       } else {
         const errData = await response.json();
@@ -134,17 +137,15 @@ function AddTransactionSheet({ isOpen, onClose }) {
       console.error("Ошибка при отправке транзакции:", error);
       showNotification(t("notifications.network_error", "Ошибка сети"), "error");
     } finally {
-      // Всегда выключаем блокировку кнопки в самом конце
       setIsSubmitting(false);
     }
   };
 
   return (
     <>
-      {/* Затемнение фона */}
       {isOpen && (
         <div
-          onClick={isSubmitting ? null : handleClose} // Запрещаем закрывать во время отправки
+          onClick={isSubmitting ? null : handleClose}
           style={{
             position: "fixed", inset: 0,
             backgroundColor: "rgba(0,0,0,0.5)",
@@ -154,7 +155,6 @@ function AddTransactionSheet({ isOpen, onClose }) {
         />
       )}
 
-      {/* Сама шторка */}
       <div style={{
         position: "fixed",
         left: 0,
@@ -171,7 +171,6 @@ function AddTransactionSheet({ isOpen, onClose }) {
         maxHeight: "85vh",
         overflowY: "auto"
       }}>
-        {/* Полоска-индикатор сверху шторки */}
         <div style={{
           width: "40px", height: "4px", backgroundColor: "#475569",
           borderRadius: "2px", margin: "0 auto 20px auto"
@@ -209,6 +208,7 @@ function AddTransactionSheet({ isOpen, onClose }) {
           </button>
         </div>
 
+        {/* Поле Ввода Суммы */}
         <input
           type="number" min="0.01" step="any"
           disabled={isSubmitting}
@@ -218,6 +218,7 @@ function AddTransactionSheet({ isOpen, onClose }) {
           style={{ width: "100%", padding: "12px", borderRadius: "8px", backgroundColor: "#334155", color: "white", border: "1px solid #475569", marginBottom: "15px", fontSize: "1.1rem", boxSizing: "border-box", opacity: isSubmitting ? 0.6 : 1 }}
         />
 
+        {/* Выбор Кошелька */}
         <select
           value={walletId}
           disabled={isSubmitting || wallets.length === 0}
@@ -234,7 +235,7 @@ function AddTransactionSheet({ isOpen, onClose }) {
           )}
         </select>
 
-        {/* Блок селекта категорий и формы создания */}
+        {/* Блок категорий */}
         <select
           value={categoryId}
           disabled={isSubmitting}
@@ -275,6 +276,27 @@ function AddTransactionSheet({ isOpen, onClose }) {
           </div>
         )}
 
+        {/* 4. ДОБАВЛЕННОЕ ПОЛЕ: Выбор Даты и Времени */}
+        <input
+          type="datetime-local"
+          disabled={isSubmitting}
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "12px",
+            borderRadius: "8px",
+            backgroundColor: "#334155",
+            color: "white",
+            border: "1px solid #475569",
+            marginBottom: "15px",
+            boxSizing: "border-box",
+            opacity: isSubmitting ? 0.6 : 1,
+            colorScheme: "dark" // делает календарь всплывающим в темных тонах
+          }}
+        />
+
+        {/* Описание */}
         <input
           type="text"
           disabled={isSubmitting}

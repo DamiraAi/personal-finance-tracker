@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 
 const BASE_URL = "https://finance-backend-tj8e.onrender.com";
 
@@ -14,20 +21,29 @@ export function AppDataProvider({ children }) {
   const [report, setReport] = useState(null);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [period, setPeriod] = useState("month");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
   const toastTimeoutRef = useRef(null);
 
   const getAuthHeaders = useCallback(() => {
-    return { Authorization: `Bearer ${token}` };
+    return {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
   }, [token]);
 
-  const updateToken = useCallback(() => {
-    setToken(localStorage.getItem("token"));
+  const updateToken = useCallback((newToken = null) => {
+    const activeToken = newToken || localStorage.getItem("token");
+    setToken(activeToken);
   }, []);
 
   const logout = useCallback(() => {
@@ -42,101 +58,16 @@ export function AppDataProvider({ children }) {
     setAllTransactions([]);
   }, []);
 
-  // Универсальный обработчик ошибок авторизации (если токен протух)
-  const handleApiError = useCallback((response) => {
-    if (response.status === 401) {
-      console.warn("Токен устарел или недействителен. Разлогин.");
-      logout();
-    }
-  }, [logout]);
-
-  // 1. Функция последних транзакций (БЕЗОПАСНАЯ)
-  const getRecentTransactions = useCallback(async () => {
-    if (!token) return;
-    try {
-      const walletsResponse = await fetch(`${BASE_URL}/wallets`, { headers: getAuthHeaders() });
-      if (!walletsResponse.ok) {
-        handleApiError(walletsResponse);
-        return;
+  // Универсальный обработчик ошибок авторизации (401)
+  const handleApiError = useCallback(
+    (response) => {
+      if (response.status === 401) {
+        console.warn("Токен устарел или недействителен. Разлогин.");
+        logout();
       }
-      
-      const walletsData = await walletsResponse.json();
-      if (!Array.isArray(walletsData) || walletsData.length === 0) {
-        setRecentTransactions([]);
-        return;
-      }
-      
-      // Добавили .catch() к каждому индивидуальному промису
-      const requests = walletsData.map((wallet) =>
-        fetch(`${BASE_URL}/transactions?wallet_id=${wallet.id}`, { headers: getAuthHeaders() })
-          .then((res) => {
-            if (!res.ok) {
-              handleApiError(res);
-              return [];
-            }
-            return res.json();
-          })
-          .catch(() => []) 
-      );
-      
-      const results = await Promise.all(requests);
-      const allTransactionsData = results.flat();
-
-      const uniqueTransactions = allTransactionsData.filter(
-        (tx, index, self) =>
-          self.findIndex((t) => (t.id || t.transaction_id || t.debt_id) === (tx.id || tx.transaction_id || tx.debt_id)) === index
-      );
-      
-      const sorted = uniqueTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-      setRecentTransactions(sorted.slice(0, 3));
-    } catch (error) {
-      console.error("Ошибка при загрузке последних транзакций:", error);
-    }
-  }, [token, getAuthHeaders, handleApiError]);
-
-  // 2. Функция ВСЕХ транзакций (БЕЗОПАСНАЯ)
-  const getAllTransactions = useCallback(async () => {
-    if (!token) return;
-    try {
-      const walletsResponse = await fetch(`${BASE_URL}/wallets`, { headers: getAuthHeaders() });
-      if (!walletsResponse.ok) {
-        handleApiError(walletsResponse);
-        return;
-      }
-      
-      const walletsData = await walletsResponse.json();
-      if (!Array.isArray(walletsData) || walletsData.length === 0) {
-        setAllTransactions([]);
-        return;
-      }
-      
-      // Добавили .catch() к каждому индивидуальному промису
-      const requests = walletsData.map((wallet) =>
-        fetch(`${BASE_URL}/transactions?wallet_id=${wallet.id}`, { headers: getAuthHeaders() })
-          .then((res) => {
-            if (!res.ok) {
-              handleApiError(res);
-              return [];
-            }
-            return res.json();
-          })
-          .catch(() => [])
-      );
-      
-      const results = await Promise.all(requests);
-      const combined = results.flat();
-
-      const uniqueTransactions = combined.filter(
-        (tx, index, self) =>
-          self.findIndex((t) => (t.id || t.transaction_id || t.debt_id) === (tx.id || tx.transaction_id || tx.debt_id)) === index
-      );
-
-      const sorted = uniqueTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-      setAllTransactions(sorted);
-    } catch (error) {
-      console.error("Ошибка при загрузке всех транзакций:", error);
-    }
-  }, [token, getAuthHeaders, handleApiError]);
+    },
+    [logout]
+  );
 
   const showNotification = useCallback((message, type = "success") => {
     if (toastTimeoutRef.current) {
@@ -148,10 +79,40 @@ export function AppDataProvider({ children }) {
     }, 4000);
   }, []);
 
+  // 1. Загрузка ВСЕХ транзакций
+  const getAllTransactions = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${BASE_URL}/transactions`, {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        handleApiError(res);
+        return;
+      }
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const sorted = data.sort(
+          (a, b) => new Date(b.date) - new Date(a.date)
+        );
+        setAllTransactions(sorted);
+        setRecentTransactions(sorted.slice(0, 3));
+      }
+    } catch (error) {
+      console.error("Ошибка при загрузке всех транзакций:", error);
+    }
+  }, [token, getAuthHeaders, handleApiError]);
+
+  const getRecentTransactions = useCallback(async () => {
+    await getAllTransactions();
+  }, [getAllTransactions]);
+
   const getWallets = useCallback(async () => {
     if (!token) return;
     try {
-      const response = await fetch(`${BASE_URL}/wallets`, { headers: getAuthHeaders() });
+      const response = await fetch(`${BASE_URL}/wallets`, {
+        headers: getAuthHeaders(),
+      });
       if (response.ok) {
         setWallets(await response.json());
       } else {
@@ -165,7 +126,9 @@ export function AppDataProvider({ children }) {
   const getCategories = useCallback(async () => {
     if (!token) return;
     try {
-      const response = await fetch(`${BASE_URL}/categories`, { headers: getAuthHeaders() });
+      const response = await fetch(`${BASE_URL}/categories`, {
+        headers: getAuthHeaders(),
+      });
       if (response.ok) {
         setCategories(await response.json());
       } else {
@@ -179,15 +142,19 @@ export function AppDataProvider({ children }) {
   const fetchDebtsData = useCallback(async () => {
     if (!token) return;
     try {
-      const debtsRes = await fetch(`${BASE_URL}/debts`, { headers: getAuthHeaders() });
-      const peopleRes = await fetch(`${BASE_URL}/debts/people`, { headers: getAuthHeaders() });
-      
+      const debtsRes = await fetch(`${BASE_URL}/debts`, {
+        headers: getAuthHeaders(),
+      });
+      const peopleRes = await fetch(`${BASE_URL}/debts/people`, {
+        headers: getAuthHeaders(),
+      });
+
       if (debtsRes.ok) {
         setDebts(await debtsRes.json());
       } else {
         handleApiError(debtsRes);
       }
-      
+
       if (peopleRes.ok) {
         setPeople(await peopleRes.json());
       } else {
@@ -225,21 +192,103 @@ export function AppDataProvider({ children }) {
     }
   }, [token, period, startDate, endDate, getAuthHeaders, handleApiError]);
 
+  // ВАЖНО: Объявление функции ОБНОВЛЕНИЯ ДАННЫХ перенесено НАВЕРХ
   const refreshAfterTransactionChange = useCallback(() => {
     getWallets();
     getReport();
-    getRecentTransactions();
     getAllTransactions();
     fetchDebtsData();
-  }, [getWallets, getReport, getRecentTransactions, getAllTransactions, fetchDebtsData]);
+  }, [getWallets, getReport, getAllTransactions, fetchDebtsData]);
 
+  // 2. Добавление транзакции
+  const addTransaction = useCallback(
+    async (txData) => {
+      if (!token) return;
+      try {
+        const response = await fetch(`${BASE_URL}/transactions`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(txData),
+        });
+
+        if (response.ok) {
+          showNotification("Транзакция успешно добавлена", "success");
+          refreshAfterTransactionChange();
+        } else {
+          handleApiError(response);
+          const errData = await response.json().catch(() => ({}));
+          showNotification(errData.detail || "Ошибка добавления", "error");
+        }
+      } catch (err) {
+        console.error("Ошибка сети при создании транзакции:", err);
+        showNotification("Сетевая ошибка при создании", "error");
+      }
+    },
+    [token, getAuthHeaders, handleApiError, showNotification, refreshAfterTransactionChange]
+  );
+
+  // 3. Редактирование / обновление транзакции
+  const updateTransaction = useCallback(
+    async (id, txData) => {
+      if (!token) return;
+      try {
+        const response = await fetch(`${BASE_URL}/transactions/${id}`, {
+          method: "PUT",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(txData),
+        });
+
+        if (response.ok) {
+          showNotification("Транзакция обновлена", "success");
+          refreshAfterTransactionChange();
+        } else {
+          handleApiError(response);
+          const errData = await response.json().catch(() => ({}));
+          showNotification(errData.detail || "Ошибка обновления", "error");
+        }
+      } catch (err) {
+        console.error("Ошибка при обновлении транзакции:", err);
+        showNotification("Ошибка сети при обновлении", "error");
+      }
+    },
+    [token, getAuthHeaders, handleApiError, showNotification, refreshAfterTransactionChange]
+  );
+
+  // 4. Удаление транзакции
+  const deleteTransaction = useCallback(
+    async (id) => {
+      if (!token) return;
+      try {
+        const response = await fetch(`${BASE_URL}/transactions/${id}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        });
+
+        if (response.ok) {
+          showNotification("Транзакция удалена", "success");
+          refreshAfterTransactionChange();
+        } else {
+          handleApiError(response);
+          showNotification("Не удалось удалить транзакцию", "error");
+        }
+      } catch (err) {
+        console.error("Ошибка при удалении транзакции:", err);
+        showNotification("Ошибка сети при удалении", "error");
+      }
+    },
+    [token, getAuthHeaders, handleApiError, showNotification, refreshAfterTransactionChange]
+  );
+
+  // Первоначальная загрузка всех данных
   useEffect(() => {
     if (token) {
-      getWallets();
-      getCategories();
-      fetchDebtsData();
-      getRecentTransactions();
-      getAllTransactions();
+      setLoading(true);
+      Promise.all([
+        getWallets(),
+        getCategories(),
+        fetchDebtsData(),
+        getAllTransactions(),
+      ]).finally(() => setLoading(false));
     } else {
       setWallets([]);
       setCategories([]);
@@ -249,7 +298,7 @@ export function AppDataProvider({ children }) {
       setRecentTransactions([]);
       setAllTransactions([]);
     }
-  }, [token, getWallets, getCategories, fetchDebtsData, getRecentTransactions, getAllTransactions]);
+  }, [token, getWallets, getCategories, fetchDebtsData, getAllTransactions]);
 
   useEffect(() => {
     if (token) {
@@ -264,17 +313,45 @@ export function AppDataProvider({ children }) {
   }, []);
 
   const value = {
-    wallets, categories, debts, people, report, 
-    recentTransactions, getRecentTransactions,
-    allTransactions, getAllTransactions, refreshAfterTransactionChange,
-    period, setPeriod, startDate, setStartDate, endDate, setEndDate,
-    toast, showNotification,
-    getWallets, getCategories, fetchDebtsData, getReport,
+    wallets,
+    categories,
+    debts,
+    people: people || [],
+    persons: people || [],
+    report,
+    recentTransactions,
+    getRecentTransactions,
+    allTransactions,
+    transactions: allTransactions,
+    getAllTransactions,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    refreshAfterTransactionChange,
+    period,
+    setPeriod,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    toast,
+    showNotification,
+    loading,
+    getWallets,
+    getCategories,
+    fetchDebtsData,
+    getReport,
     BASE_URL,
-    token, updateToken, logout
+    token,
+    updateToken,
+    logout,
   };
 
-  return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
+  return (
+    <AppDataContext.Provider value={value}>
+      {children}
+    </AppDataContext.Provider>
+  );
 }
 
 export function useAppData() {
